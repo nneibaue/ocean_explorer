@@ -425,7 +425,7 @@ class Depth:
     Args:
       filter_dict: dictionary of the form {`element`: `filter_func`}, where
         `filter_func` takes an array and returns a single threshold value. 
-      combine_detsusm: bool. Whether or not to use the data from all Detsums
+      combine_detsum: bool. Whether or not to use the data from all Detsums
         in this Depth when calculating the threshold with `filter_func`. If
         this is `False`, then the threshold will be calculated based on data
         from each individual Detsum
