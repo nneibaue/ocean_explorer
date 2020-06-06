@@ -2,8 +2,10 @@
 import altair as alt
 import os
 import re
+import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
+from functools import reduce
 
 class Detsum:
   file_template = '^detsum_([a-zA-Z]{1,2})_([A-Z])(_norm)?.txt$'
