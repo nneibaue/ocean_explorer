@@ -452,7 +452,6 @@ class Depth:
       # Reset all masks
       for d in self.detsums:
         if not np.all(d.mask):
-          print(f'Mask already found for {d.element}. Resetting...')
           d.reset_mask()
       depth = self
     else:
