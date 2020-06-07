@@ -38,13 +38,13 @@ class Detsum:
   @property
   def mask(self):
     '''Returns full mask for this Detsum.'''
-    if not self._masks:
+    if len(self._masks) == 0:
       return np.ones_like(self._data_raw, dtype=bool)
     return np.logical_and.reduce(self._masks)
 
   def _apply_masks(self):
     data = self._data_raw.copy()
-    if not self._masks:
+    if len(self._masks) == 0:
       return data
     data[~self.mask] = np.nan
     return data
@@ -88,17 +88,16 @@ class Detsum:
 class Scan:
   file_template = '^scan2D_([0-9]{4,7})$' # Assume scan number < 1E6
 
-  def __init__(self, path,
+  def __init__(self, path=None,
                elements_of_interest=None,
                orbitals=['K'],
                normalized=True,
-               filter=True):
+               copy=None):
     self.depth = path.split('/')[-2]
     self.name = path.split('/')[-1]
     self._elements_of_interest = elements_of_interest
     self._orbitals = orbitals
     self._normalized = normalized
-    self._filter = filter
     if not re.fullmatch(Scan.file_template, self.name):
       raise NameError(f'{path} is not a valid name for Scan directory')
     else:
@@ -118,9 +117,15 @@ class Scan:
     else:
       template += '.txt$'
     self._template = template  
-    self.detsums = self._make_detsums(template)
+
+    # This is gross
+    if copy is None:
+      self.detsums = self._make_detsums(template)
+    else:
+      if not isinstance(copy, Scan):
+        raise TypeError("`copy` must be a Scan instance")
+      self.detsums = copy.detsums
     self.detsums = sorted(self.detsums, key = lambda d: d.element)
-    self.test = 'test'
 
   def _get_element_groups(self):
     elements = np.array(self.elements)
@@ -307,12 +312,12 @@ class Scan:
 
 
   def filter_by(self, element):
-    # Create a new scan object
+    # Create a new scan object that copies this scan
     s = Scan(self.path,
              self._elements_of_interest,
              self._orbitals,
              self._normalized,
-             self._filter)
+             copy=self)
 
     # Extract the mask from the element of interest
     for d in s.detsums:
@@ -467,7 +472,7 @@ class Depth:
         data_for_mask = d._data_raw
 
       threshold = get_threshold(data_for_mask)
-      print(f'Threshold for {d.element}: {threshold}')
+      #print(f'Threshold for {d.element}: {threshold}')
       mask = d._data_raw > threshold
       d.add_mask(mask)
 
@@ -477,6 +482,3 @@ class Depth:
 
   def __repr__(self):
     return f'Depth({self.depth}, scans: {[s.scan_number for s in self.scans]})'
-    
-
-
