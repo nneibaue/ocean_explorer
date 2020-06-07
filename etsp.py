@@ -144,6 +144,8 @@ class Scan:
     if sort_by not in (['num_pixels'] + [f'{element}_counts' for element in elements_to_sum]):
       raise ValueError("`sort_by` must be 'pixels' or '{element}_counts'")
     data = self.data
+    if np.all(pd.isnull(data).values):
+      return pd.DataFrame()
     aggfunc = {element: np.sum for element in elements_to_sum}
     aggfunc.update(element_group = 'count')
     res = pd.pivot_table(data,
