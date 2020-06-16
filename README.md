@@ -1,2 +1,2 @@
 # ocean_explorer
-Python Notebook to view etsp data
+Python utilities to view and explore x-ray spectroscopic data from ocean samples
