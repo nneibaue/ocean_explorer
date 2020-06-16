@@ -393,6 +393,7 @@ class Depth:
         print(e)
         pass
 
+  # Returns a fresh copy of the Detsum from the source data
   def fresh_copy(self):
     return Depth(**self._instance_kwargs)
 
