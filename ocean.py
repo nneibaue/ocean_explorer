@@ -469,7 +469,7 @@ class Depth:
     data_full = depth.combined_scan.data.copy()
 
     for d in depth.detsums:
-      get_threshold = filter_dict[element]
+      get_threshold = filter_dict[d.element]
       # Make sure filter_funcs are working properly.
       if not isinstance(get_threshold(test_arr), float):
         raise TypeError('Problem encountered with filter function for {d.element}. '
