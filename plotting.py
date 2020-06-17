@@ -72,6 +72,7 @@ def save_new_props(element_groups, dir_name=None):
     with open(map_fname, 'r') as f:
       prop_map = json.load(f)
   else:
+    os.makedirs(dir_name)
     prop_map = {}
   
 
@@ -96,8 +97,11 @@ def save_new_props(element_groups, dir_name=None):
   # Re-save available_props (now with fewer available)
   with open(available_fname, 'w') as f:
     json.dump(available_props, f)
-   
 
+  # Re-save new property map
+  with open(map_fname, 'w') as f:
+    json.dump(prop_map, f)
+   
 def get_single_prop(element_group, dir_name=None):
   '''Gets the property for the given element_group, if it exists.'''
 
