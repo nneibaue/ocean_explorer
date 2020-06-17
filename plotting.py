@@ -22,7 +22,8 @@ def _create_prop_list(dir_name=None, overwrite=False):
 
   fname = 'available_props.json'
   if dir_name is not None:
-    os.makedirs(dir_name)
+    if not os.path.isdir(dir_name):
+      os.makedirs(dir_name)
     fname = os.path.join(dir_name, fname)
 
   # Get a default list of 10 colors. I don't exactly understand *how* this
