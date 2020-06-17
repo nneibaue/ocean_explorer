@@ -92,7 +92,7 @@ def save_new_props(element_groups, dir_name=None):
   for group in element_groups:
     if group in prop_map:
       continue
-    prop_map.update(group=available_props.pop(0))
+    prop_map.update({group: available_props.pop(0)})
 
   # Re-save available_props (now with fewer available)
   with open(available_fname, 'w') as f:
