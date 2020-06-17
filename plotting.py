@@ -237,7 +237,7 @@ def ribbon_plot(depths,
   i=0
   yticklabels = []
   for depth in depths:
-    depth.apply_element_filter(element_filter, combine_detsums=combine_detsums)
+    depth.apply_element_filter(element_filter, combine_detsums=combine_detsums, inplace=False)
     if combine_scans:
       scans = [depth.combined_scan]
       yticklabels.append(depth.depth)
