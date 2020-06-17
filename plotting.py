@@ -19,6 +19,7 @@ def ribbon_plot(depths,
                 combine_detsums=True,
                 N=8,
                 normalize_by='counts',
+                base64=False,
                 prop_dict=None):
   '''Shows fractional concentration of element among different groups.
 
@@ -36,6 +37,7 @@ def ribbon_plot(depths,
       top 12 groups from each depth"
     normalize_by: string. Which quantity to use for data normalization. This
       can either be 'counts' or 'pixels'.
+    base64: bool. If this is True, will encode the graph and return html image element.
     prop_dict: optional dictionary to store properties in for the whole notebook.
       If this is None, then properties will be created for each individual plot.
   '''
@@ -128,6 +130,8 @@ def ribbon_plot(depths,
       if not combine_scans:
         yticklabels.append(f'{depth.depth}: {scan.name}')
 
+  ax.set_xlim(0, 1.13)
+
     # https://stackoverflow.com/questions/23696898/adjusting-text-background-transparency
     #t.set_bbox({'facecolor':'white', 'alpha':0.8})
     
@@ -154,6 +158,8 @@ def ribbon_plot(depths,
 
 
   ax.set_ylim(-0.5, i-0.5)
-  ax.set_xlim(0, 1.13)
   ax.set_title(f'{filter_by} {normalize_by}', fontsize=16, fontweight='bold')
-  plt.show()
+  plt.close()
+  if base64:
+    return encode_matplotlib_fig(fig)
+  return fig
