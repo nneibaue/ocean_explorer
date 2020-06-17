@@ -7,7 +7,7 @@ import base64
 
 def encode_matplotlib_fig(fig):
   buf = BytesIO()
-  fig.savefig(buf, format='png')
+  fig.savefig(buf, format='png', bbox_inches='tight')
   data = base64.b64encode(buf.getvalue()).decode('ascii')
   plt.close(fig)
   return f"<img src='data:image/png;base64,{data}'/>"
@@ -147,7 +147,8 @@ def ribbon_plot(depths,
                   bbox_to_anchor=(1.05, 1.2),
                   ncol=round(len(patches) / 10) or 1,
                   labelspacing=2,
-                  bbox_transform=fig.transFigure)
+                  bbox_transform=fig.transFigure,
+                  loc='upper left')
   for patch in leg.get_patches():
     patch.set_height(22)
     patch.set_y(-10)
