@@ -206,7 +206,7 @@ def ribbon_plot(depths,
     groups = get_scan_groups(scan)
 
     # Save properties for these groups
-    save_new_props(groups, dir_name=experiment_dir)
+    save_new_props(groups.index, dir_name=experiment_dir)
 
     # If groups are empy, do nothing
     if not len(groups.index):
