@@ -72,7 +72,6 @@ def save_new_props(element_groups, dir_name=None):
     with open(map_fname, 'r') as f:
       prop_map = json.load(f)
   else:
-    os.makedirs(dir_name)
     prop_map = {}
   
 
