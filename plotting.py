@@ -170,7 +170,7 @@ def ribbon_plot(depths,
   depths = sorted(depths, key=lambda d: int(d.depth[:-1]), reverse=True)
 
   if not _prop_list_exists(experiment_dir):
-    _create_prop_list(dir_Name=experiment_dir, overwrite=True)
+    _create_prop_list(dir_name=experiment_dir, overwrite=True)
 
   if normalize_by == 'pixels':
     sort_by = 'num_pixels'
@@ -254,7 +254,7 @@ def ribbon_plot(depths,
   # https://stackoverflow.com/questions/53849888/make-patches-bigger-used-as-legend-inside-matplotlib
   patches = []
   for group in these_props:
-    patches.append(mpatches.Patch( **these_props[group], label=group))
+    patches.append(mpatches.Patch(**these_props[group], label=group))
 
   leg = ax.legend(handles=patches,
                   bbox_to_anchor=(1, 1.2),
