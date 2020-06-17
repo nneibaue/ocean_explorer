@@ -4,6 +4,127 @@ from cycler import cycler
 import numpy as np
 from io import BytesIO
 import base64
+import json
+import os
+
+COLORS = plt.cm.tab20(np.arange(20))
+PATTERNS = [None, '\\\\', '..', 'xx', '**', '++', 'oo', '00', '--', '\\\\\\', '...', 'xxx', '***', '+++', 'ooo', '000', '---']
+
+def _prop_list_exists(dir_name=None):
+  fname = 'available_props.json'
+  if dir_name is not None:
+    fname = os.path.join(dir_name, fname)
+  
+  return os.path.exists(fname)
+
+def _create_prop_list(dir_name=None, overwrite=False):
+  '''Creates a new list of properties and saves it to `fname`.'''
+
+  fname = 'available_props.json'
+  if dir_name is not None:
+    fname = os.path.join(dir_name, fname)
+
+  # Get a default list of 10 colors. I don't exactly understand *how* this
+  # works, but I know that it *does* work. Here is the stack overflow for
+  # this: https://stackoverflow.com/questions/49233855/matplotlib-add-more-colors-to-the-default-colors-in-axes-prop-cycle-manually
+  color_cycler = cycler(facecolor=COLORS)
+  pattern_cycler = cycler(hatch=PATTERNS)
+
+  # Multiplication of cyclers results in the 'outer product'
+  # https://matplotlib.org/cycler/
+  props = list(iter(pattern_cycler * color_cycler))
+
+  # Convert numpy arrays to lists for json encoding
+  for prop in props:
+    for key in prop:
+      if isinstance(prop[key], np.ndarray):
+        prop[key] = list(prop[key])
+
+  if os.path.exists(fname) and not overwrite:
+    raise ValueError(f'{fname} already exists! Overwriting will erase property data for this experiment\n'
+                     f'Please set `overwrite` to True if you would like to proceed')
+
+  with open(fname, 'w') as f:
+    json.dump(props, f)
+
+
+def save_new_props(element_groups, dir_name=None):
+  '''Takes properties from available_props.json and assigns it to element groups.
+  
+  Note: if `element_group` already has a property assigned, then this does nothing.
+
+  Args:
+    element_groups: list of element group strings. E.g. ['Cu', 'Cu|Br', 'Cu|Zn']
+    dir_name: directory to save prop file in. If this is None, defaults to current working directory.
+    
+  '''
+
+  available_fname = 'available_props.json'
+  map_fname = 'property_map.json'
+
+  if dir_name is not None:
+    available_fname = os.path.join(dir_name, available_fname)
+    map_fname = os.path.join(dir_name, map_fname)
+
+  # Read property map into memory, if exists. Else make a new one
+  if os.path.exists(map_fname):
+    with open(map_fname, 'r') as f:
+      prop_map = json.load(f)
+  else:
+    prop_map = {}
+  
+
+  if not os.path.exists(available_fname):
+    raise FileNotFoundError('Cannot find {available_fname}. Please check that it exists!')
+
+  # Read available props into memory
+  with open(available_fname, 'r') as f:
+    available_props = json.load(f)
+
+  # If the props run out, then create a new set (for now, props will be repeated)
+  # This is kind-of an ugly hack for now, but will prevent the code from crashing
+  if not available_props:
+    _create_prop_list(dir_name=dir_name, overwrite=True)
+
+  # Assign new properties from available_props
+  for group in element_groups:
+    if group in prop_map:
+      continue
+    prop_map.update(group=available_props.pop(0))
+
+  # Re-save available_props (now with fewer available)
+  with open(available_fname, 'w') as f:
+    json.dump(available_props, f)
+   
+
+def get_single_prop(element_group, dir_name=None):
+  '''Gets the property for the given element_group, if it exists.'''
+
+  map_fname = 'property_map.json'
+  if dir_name is not None:
+    map_fname = os.path.join(dir_name, map_fname)
+  if not os.path.exists(map_fname):
+    raise FileNotFoundError(f'No property map found at {map_fname}! Use `save_new_props` to create a new map')
+
+  with open(map_fname, 'r') as f:
+    prop_map = json.load(f)
+  if element_group not in prop_map:
+    raise ValueError(f'{element_group} not found!')
+  return prop_map[element_group]
+  
+def get_all_props(dir_name=None):
+  '''Retrieves the entire property map from disk.'''
+
+  map_fname = 'property_map.json'
+  if dir_name is not None:
+    map_fname = os.path.join(dir_name, map_fname)
+  if not os.path.exists(map_fname):
+    raise FileNotFoundError(f'No property map found at {map_fname}! Use `save_new_props` to create a new map')
+    
+  with open(map_fname, 'r') as f:
+    prop_map = json.load(f)
+  return prop_map
+
 
 def encode_matplotlib_fig(fig):
   buf = BytesIO()
@@ -20,7 +141,7 @@ def ribbon_plot(depths,
                 N=8,
                 normalize_by='counts',
                 base64=False,
-                prop_dict=None):
+                experiment_dir=None):
   '''Shows fractional concentration of element among different groups.
 
   Args:
@@ -38,30 +159,18 @@ def ribbon_plot(depths,
     normalize_by: string. Which quantity to use for data normalization. This
       can either be 'counts' or 'pixels'.
     base64: bool. If this is True, will encode the graph and return html image element.
-    prop_dict: optional dictionary to store properties in for the whole notebook.
-      If this is None, then properties will be created for each individual plot.
-  '''
+    experiment_dir: optional directory containing property information. If this is None, then properties
+      will be saved to local disk (if using colab, this is the local directory on the Colab machine, which
+      may be deleted when a new instance of the Notebook is loaded)
+    '''
 
   fig, ax = plt.subplots(figsize=(16, 4))
 
   # Sort depth objects by depth
   depths = sorted(depths, key=lambda d: int(d.depth[:-1]), reverse=True)
 
-  # Get a default list of 10 colors. I don't exactly understand *how* this
-  # works, but I know that it *does* work. Here is the stack overflow for
-  # this: https://stackoverflow.com/questions/49233855/matplotlib-add-more-colors-to-the-default-colors-in-axes-prop-cycle-manually
-  colors = plt.cm.tab10(np.arange(10))
-
-  patterns = [None, '///', '..', 'xx', '**', '+++', 'OO', '\\\\\\']
-  color_cycler = cycler(facecolor=colors)
-  pattern_cycler = cycler(hatch=patterns)
-
-  # Multiplication of cyclers results in the 'outer product'
-  # https://matplotlib.org/cycler/
-  props = iter(pattern_cycler * color_cycler)
-
-  if prop_dict is None:
-    prop_dict = {}
+  if not _prop_list_exists(experiment_dir):
+    _create_prop_list(dir_Name=experiment_dir, overwrite=True)
 
   if normalize_by == 'pixels':
     sort_by = 'num_pixels'
@@ -81,30 +190,36 @@ def ribbon_plot(depths,
       groups = groups.iloc[:N]
     return groups
 
-  # Assigns a unique color for each group, if the color doesn't exist yet
-  def update_prop_dict(groups):
-    for g in groups.index:
-      if g not in prop_dict:
-        prop_dict[g] = next(props)
-        prop_dict[g].update({'alpha': 0.8, 'fill': True, 'edgecolor': 'k'})
+        #prop_dict[g].update({'alpha': 0.8, 'fill': True, 'edgecolor': 'k'})
       #print(f'Adding {g} to prop_dict')
+
+  # Properties used for this 
+  these_props = {}
 
   # Plots single scan (one bar)
   def plot_scan(scan, i):
     groups = get_scan_groups(scan)
 
+    # Save properties for these groups
+    save_new_props(groups, dir_name=experiment_dir)
+
     # If groups are empy, do nothing
     if not len(groups.index):
       return
-    update_prop_dict(groups)
+
     left = 0
     thickness = 1
+    props = get_all_props(experiment_dir)
     for group in groups.index:
+      # Get props and update with a couple of things
+      prop = props[group]
+      prop.update({'fill': 'True', 'edgecolor': 'k'})
+      these_props[group] = prop
+
       #Encode the group value (e.g. Cu|Mn -> 0.0778) as the rectangle width
       rect_width = groups[col].loc[group]
       ax.add_patch(mpatches.Rectangle((left, i-thickness/2),
-                            rect_width, thickness,
-                            **prop_dict[group]))
+                            rect_width, thickness, **prop))
       left += rect_width
 
     t=ax.text(left+0.02, i, f'{col}: {groups[col].sum():0.2f}',
@@ -138,11 +253,9 @@ def ribbon_plot(depths,
   # Make the legend using patches. Here is a helpful link
   # https://stackoverflow.com/questions/53849888/make-patches-bigger-used-as-legend-inside-matplotlib
   patches = []
-  for group in prop_dict:
-    patches.append(mpatches.Patch(
-       **prop_dict[group], 
-       label=group,
-    ))
+  for group in these_props:
+    patches.append(mpatches.Patch( **these_props[group], label=group))
+
   leg = ax.legend(handles=patches,
                   bbox_to_anchor=(1, 1.2),
                   ncol=round(len(patches) / 10) or 1,
