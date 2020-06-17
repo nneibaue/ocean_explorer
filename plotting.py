@@ -141,8 +141,9 @@ def ribbon_plot(depths,
     ))
   leg = ax.legend(handles=patches,
                   bbox_to_anchor=(1.05, 1.2),
-                  ncol=len(patches) // 10,
-                  labelspacing=2)
+                  ncol=round(len(patches) / 10) or 1,
+                  labelspacing=2,
+                  bbox_transform=fig.transFigure)
   for patch in leg.get_patches():
     patch.set_height(22)
     patch.set_y(-10)
