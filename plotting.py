@@ -2,6 +2,15 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from cycler import cycler
 import numpy as np
+from io import BytesIO
+import base64
+
+def encode_matplotlib_fig(fig):
+  buf = BytesIO()
+  fig.savefig(buf, format='png')
+  data = base64.b64encode(buf.getvalue()).decode('ascii')
+  plt.close(fig)
+  return f"<img src='data:image/png;base64,{data}'/>"
 
 def ribbon_plot(depths,
                 element_filter,
