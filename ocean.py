@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from functools import reduce
+from plotting import encode_matplotlib_fig
 
 class Detsum:
   file_template = '^detsum_([a-zA-Z]{1,2})_([A-Z])(_norm)?.txt$'
@@ -61,6 +62,7 @@ class Detsum:
   def plot(self, raw=False,
            figsize=(7, 7),
            ax=None,
+           base64=False,
            **imshow_kwargs):
 
     if ax is None:
@@ -71,9 +73,13 @@ class Detsum:
       ax.imshow(self._data_raw, **imshow_kwargs)
     else:
       ax.imshow(self.data, aspect='equal', **imshow_kwargs)
-    ax.set_title(self)
+    ax.set_title(f'{self.element} | {self.depth} | {self.scan_name}\ntotal counts: {self.total_counts}')
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
+    if base64:
+      return encode_matplotlib_fig(fig)
+    plt.close(fig)
+    return fig 
 
   # def __add__(self, other):
   #   return self._create_default_mask(tot)
