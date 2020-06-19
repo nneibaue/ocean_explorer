@@ -227,12 +227,12 @@ def ribbon_plot(depths,
                             rect_width, thickness, **prop))
       left += rect_width
 
-    t=ax.text(left+0.02, i, f'{col}: {groups[col].sum():0.2f}',
-            verticalalignment='center',
-            fontsize=10,
-            color='black',
-            fontweight='bold',
-            transform=ax.transData)
+#    t=ax.text(left+0.02, i, f'{col}: {groups[col].sum():0.2f}',
+#            verticalalignment='center',
+#            fontsize=10,
+#            color='black',
+#            fontweight='bold',
+#            transform=ax.transData)
 
   i=0
   yticklabels = []
@@ -273,8 +273,9 @@ def ribbon_plot(depths,
   
   ax.set_yticks(np.arange(0, i))
 
+  yticklabels = [f'depth {i}' for i, _ in enumerate(yticklabels)]
   ax.set_yticklabels(yticklabels)
-
+  ax.xaxis.set_visible(False)
 
   ax.set_ylim(-0.5, i-0.5)
   ax.set_title(f'{filter_by} {normalize_by}', fontsize=16, fontweight='bold')
