@@ -265,7 +265,7 @@ def ribbon_plot(depths,
                   bbox_to_anchor=(1, 1.2),
                   ncol=round(len(patches) / 10) or 1,
                   labelspacing=2,
-                  bbox_transform=fig.transFigure,
+                  bbox_transform=ax.transAxes,
                   loc='upper left')
   for patch in leg.get_patches():
     patch.set_height(22)
