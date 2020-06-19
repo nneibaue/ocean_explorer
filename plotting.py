@@ -169,7 +169,7 @@ def ribbon_plot(depths,
       may be deleted when a new instance of the Notebook is loaded)
     '''
 
-  fig, ax = plt.subplots(figsize=(16, 4))
+  fig, ax = plt.subplots(figsize=(14, 4))
 
   # Sort depth objects by depth
   depths = sorted(depths, key=lambda d: int(d.depth[:-1]), reverse=True)
