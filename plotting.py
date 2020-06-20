@@ -255,7 +255,7 @@ def ribbon_plot(depths,
     # https://stackoverflow.com/questions/23696898/adjusting-text-background-transparency
     #t.set_bbox({'facecolor':'white', 'alpha':0.8})
     
-  element_group_legend(ax, these_props.keys())
+  element_group_legend(ax, these_props.keys(), experiment_dir)
   
   ax.set_yticks(np.arange(0, i))
   ax.set_yticklabels(yticklabels)
