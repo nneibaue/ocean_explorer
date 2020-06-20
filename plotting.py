@@ -255,30 +255,31 @@ def ribbon_plot(depths,
     # https://stackoverflow.com/questions/23696898/adjusting-text-background-transparency
     #t.set_bbox({'facecolor':'white', 'alpha':0.8})
     
-  # Make the legend using patches. Here is a helpful link
-  # https://stackoverflow.com/questions/53849888/make-patches-bigger-used-as-legend-inside-matplotlib
-  patches = []
-  for group in these_props:
-    patches.append(mpatches.Patch(**these_props[group], label=group))
-
-  leg = ax.legend(handles=patches,
-                  bbox_to_anchor=(1, 1.2),
-                  ncol=round(len(patches) / 10) or 1,
-                  labelspacing=2,
-                  bbox_transform=fig.transFigure,
-                  loc='upper left')
-  for patch in leg.get_patches():
-    patch.set_height(22)
-    patch.set_y(-10)
+  element_group_legend(ax, these_props.keys())
   
   ax.set_yticks(np.arange(0, i))
-
   ax.set_yticklabels(yticklabels)
-
-
   ax.set_ylim(-0.5, i-0.5)
   ax.set_title(f'{filter_by} {normalize_by}', fontsize=16, fontweight='bold')
   plt.close()
   if base64:
     return encode_matplotlib_fig(fig)
   return fig
+
+
+# Make the legend using patches. Here is a helpful link
+# https://stackoverflow.com/questions/53849888/make-patches-bigger-used-as-legend-inside-matplotlib
+def element_group_legend(ax, groups) 
+  patches = []
+  for group in groups:
+    patches.append(mpatches.Patch(**these_props[group], label=group))
+
+  leg = ax.legend(handles=patches,
+                  bbox_to_anchor=(1, 1.05),
+                  ncol=round(len(patches) / 10) or 1,
+                  labelspacing=2,
+                  bbox_transform=fig.transAxes,
+                  loc='upper left')
+  for patch in leg.get_patches():
+    patch.set_height(22)
+    patch.set_y(-10)
