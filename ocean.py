@@ -65,6 +65,12 @@ class Detsum:
            base64=False,
            **imshow_kwargs):
 
+    # Make sure the right total is being displayed
+    if raw:
+      counts = np.nansum(self._data_raw)
+    else:
+      counts = self.total_counts
+      
     if ax is None:
       fig, ax = plt.subplots(figsize=figsize)
     else:
@@ -73,7 +79,7 @@ class Detsum:
       ax.imshow(self._data_raw, **imshow_kwargs)
     else:
       ax.imshow(self.data, aspect='equal', **imshow_kwargs)
-    ax.set_title(f'{self.element} | {self.depth} | {self.scan_name}\ntotal counts: {self.total_counts}')
+    ax.set_title(f'{self.element} | {self.depth} | {self.scan_name}\ntotal counts: {counts}')
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
     if base64:
