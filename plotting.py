@@ -269,10 +269,11 @@ def ribbon_plot(depths,
 
 # Make the legend using patches. Here is a helpful link
 # https://stackoverflow.com/questions/53849888/make-patches-bigger-used-as-legend-inside-matplotlib
-def element_group_legend(ax, groups):
+def element_group_legend(ax, groups, dir_name):
+  props = get_all_props(dir_name)
   patches = []
   for group in groups:
-    patches.append(mpatches.Patch(**these_props[group], label=group))
+    patches.append(mpatches.Patch(**props[group], label=group))
 
   leg = ax.legend(handles=patches,
                   bbox_to_anchor=(1, 1.05),
