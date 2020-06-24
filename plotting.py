@@ -289,22 +289,22 @@ def element_group_legend(ax, groups, dir_name):
     patch.set_y(-10)
 
 
-class DepthSelector:
-  '''Object that will hold a depth selector widget using composition.'''
-  def __init__(self, depths, orientation='vertical', **layout_kwargs):
-    self._depths = depths
-    self._boxes = [iw.Checkbox(value=False, description=depth.depth, indent=False) for depth in depths]
+class PropSelector:
+  '''Object that will hold a prop selector widget using composition.'''
+  def __init__(self, props, orientation='vertical', **layout_kwargs):
+    self._props = props
+    self._boxes = [iw.Checkbox(value=False, description=prop, indent=False) for prop in props]
 
     assert orientation in ['vertical', 'horizontal']
     self._orientation = orientation
     self._layout = iw.Layout(**layout_kwargs)
 
   @property
-  def selected_depths(self):
+  def selected_props(self):
     selected = []
-    for depth, box in zip(self._depths, self._boxes):
+    for prop, box in zip(self._props, self._boxes):
       if box.value:
-        selected.append(depth)
+        selected.append(prop)
     return selected
 
   @property
@@ -316,6 +316,10 @@ class DepthSelector:
 
     return container(self._boxes, layout=self._layout)
 
+class DepthSelector(PropSelector):
+  def __init__(self, depths, **kwargs):
+    super().__init__(depths, **kwargs)
+    self._boxes = [iw.Checkbox(value=False, description=depth.depth, indent=False) for depth in depths]
 
 class ElementFilter:
   '''Object that will hold an element filter selector widget using composition.'''
