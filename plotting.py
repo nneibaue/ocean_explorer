@@ -293,7 +293,7 @@ class DepthSelector:
   '''Object that will hold a depth selector widget using composition.'''
   def __init__(self, depths, orientation='vertical', **layout_kwargs):
     self._depths = depths
-    self._boxes = [ipywidgets.Checkbox(value=False, description=depth.depth, indent=False) for depth in depths]
+    self._boxes = [iw.Checkbox(value=False, description=depth.depth, indent=False) for depth in depths]
 
     assert orientation in ['vertical', 'horizontal']
     self._orientation = orientation
