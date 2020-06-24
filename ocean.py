@@ -24,6 +24,7 @@ class Detsum:
     self.orbital = re.search(Detsum.file_template, self.filename).group(2)
 
     self._data_raw = np.array(np.genfromtxt(path))
+    self.shape = self._data_raw.shape
 
     # Masks can only be added using self.add_mask
     self._masks = []
@@ -138,6 +139,7 @@ class Scan:
         raise TypeError("`copy` must be a Scan instance")
       self.detsums = copy.detsums
     self.detsums = sorted(self.detsums, key = lambda d: d.element)
+    
 
   def _get_element_groups(self):
     elements = np.array(self.elements)
