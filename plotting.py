@@ -327,11 +327,17 @@ class ElementFilterSelector:
 
 
     if input_type == 'slider':
-      element_input = lambda element: iw.FloatSlider(2.0, min=0, max=4, step=0.1, description=element)
+      if self._orientation == 'vertical':
+        slider_orientation = 'horizontal'
+      else:
+        slider_orientation = 'vertical'
+      element_input = lambda element: iw.FloatSlider(2.0, min=0, max=4, step=0.1,
+                                                     description=element, orientation=slider_orientation)
     elif input_type == 'text':
       element_input = lambda element: iw.HBox([iw.Textarea('2', layout=SMALLTEXTBOX), iw.HTML(element)],
                                               layout=iw.Layout(padding='10px'))
       
+    self._input_type = input_type
     self._inputs = [element_input(e) for e in self._elements]
     self._layout = iw.Layout(**layout_kwargs)
 
@@ -354,6 +360,9 @@ class ElementFilterSelector:
       inputs = self._inputs
     else:
       container = iw.HBox
-      inputs = [iw.VBox([self._inputs[i], self._inputs[i+1]]) for i in range(0, len(self._inputs), 2)]
+      if self._input_type == 'text':
+        inputs = [iw.VBox([self._inputs[i], self._inputs[i+1]]) for i in range(0, len(self._inputs), 2)]
+      else:
+        inputs = self._inputs
 
     return container(inputs, layout=self._layout)
