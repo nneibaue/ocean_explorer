@@ -369,8 +369,8 @@ class ElementFilter:
 
 
 class ElementFilterWithBoxes(ElementFilter):
-  def __init__(self, **kwargs):
-    super().__init__(**kwargs)
+  def __init__(self, *args, **kwargs):
+    super().__init__(self, *args, **kwargs)
 
     self._boxes = [iw.Checkbox(value=False, description=e, indent=False) for e in self._elements]
     self._inputs = [iw.HBox([box, _input]) for box, _input in zip(self._boxes, self._inputs)]
