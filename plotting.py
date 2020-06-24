@@ -372,13 +372,8 @@ class ElementFilterWithBoxes(ElementFilter):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-    self._boxes = [iw.Checkbox(value=False, indent=False) for e in self._elements]
-
-    if self._orientation == 'horizontal':
-      container = iw.HBox
-    else:
-      container = iw.VBox
-    self._inputs = [container([box, _input]) for box, _input in zip(self._boxes, self._inputs)]
+    self._boxes = [iw.Checkbox(value=False, description=e, indent=False) for e in self._elements]
+    self._inputs = [iw.HBox([box, _input]) for box, _input in zip(self._boxes, self._inputs)]
 
   @property
   def selected_elements(self):
