@@ -357,7 +357,7 @@ class ElementFilter:
 
 
   def get_input(self, e):
-    return self._inputs[self._elements.index(e)].children[0]
+    return self._inputs[self._elements.index(e)]
 
   @property
   def filter_dict(self):
