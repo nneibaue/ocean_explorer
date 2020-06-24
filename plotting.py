@@ -318,6 +318,19 @@ class PropSelector:
     return container(self._boxes, layout=self._layout)
 
 
+  def observe(self, handler):
+    '''Sets each checkbox to observe `handler`.
+    
+    `handler` has a signature of handler(prop, val: bool)
+    '''
+    def handler_wrapper(prop, b):
+      val = b['new']
+      return handler(prop, val)
+
+    for prop, box in zip(self._props, self._boxes):
+      box.observe(lambda b: handler_wrapper(prop, b), names='value')
+
+
 class ElementFilter:
   '''Object that will hold an element filter selector widget using composition.'''
   def __init__(self, elements, orientation='vertical', input_type='slider', **layout_kwargs):
