@@ -291,9 +291,10 @@ def element_group_legend(ax, groups, dir_name):
 
 class PropSelector:
   '''Object that will hold a prop selector widget using composition.'''
-  def __init__(self, props, orientation='vertical', **layout_kwargs):
+  def __init__(self, props, orientation='vertical', description_func=lambda p: p, **layout_kwargs):
     self._props = props
-    self._boxes = [iw.Checkbox(value=False, description=prop, indent=False) for prop in props]
+    self._boxes = [iw.Checkbox(value=False,
+                               description=description_func(prop), indent=False) for prop in props]
 
     assert orientation in ['vertical', 'horizontal']
     self._orientation = orientation
@@ -316,10 +317,6 @@ class PropSelector:
 
     return container(self._boxes, layout=self._layout)
 
-class DepthSelector(PropSelector):
-  def __init__(self, depths, **kwargs):
-    super().__init__(depths, **kwargs)
-    self._boxes = [iw.Checkbox(value=False, description=depth.depth, indent=False) for depth in depths]
 
 class ElementFilter:
   '''Object that will hold an element filter selector widget using composition.'''
