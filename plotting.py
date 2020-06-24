@@ -378,7 +378,7 @@ class ElementFilterWithBoxes(ElementFilter):
       container = iw.HBox
     else:
       container = iw.VBox
-    self._inputs = [container([_input, box]) for box, _input in zip(self._boxes, self._inputs)]
+    self._inputs = [container([box, _input]) for box, _input in zip(self._boxes, self._inputs)]
 
   @property
   def selected_elements(self):
