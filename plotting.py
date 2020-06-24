@@ -317,7 +317,7 @@ class DepthSelector:
     return container(self._boxes, layout=self._layout)
 
 
-class ElementFilterSelector:
+class ElementFilter:
   '''Object that will hold an element filter selector widget using composition.'''
   def __init__(self, elements, orientation='vertical', input_type='slider', **layout_kwargs):
     assert orientation in ['vertical', 'horizontal']
@@ -366,3 +366,19 @@ class ElementFilterSelector:
         inputs = self._inputs
 
     return container(inputs, layout=self._layout)
+
+
+class ElementFilterWithBoxes(ElementFilter):
+  def __init__(self, **kwargs):
+    super().__init__(**kwargs)
+
+    self._boxes = [iw.Checkbox(value=False, description=e, indent=False) for e in self._elements]
+    self._inputs = [iw.HBox([box, _input]) for box, _input in zip(self._boxes, self._inputs)]
+
+  @property
+  def selected_elements(self):
+    selected = []
+    for element, box in zip(self._elements, self._boxes):
+      if box.value:
+        selected.append(element)
+    return selected
