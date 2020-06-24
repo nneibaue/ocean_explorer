@@ -6,9 +6,12 @@ from io import BytesIO
 import base64
 import json
 import os
+import ipywidgets as iw
 
 COLORS = plt.cm.tab20(np.arange(20))
 PATTERNS = [None, '\\\\', '..', 'xx', '**', '++', 'oo', '00', '--', '\\\\\\', '...', 'xxx', '***', '+++', 'ooo', '000', '---']
+
+SMALLTEXTBOX = iw.Layout(width='50px', height='25px')
 
 def _prop_list_exists(dir_name=None):
   fname = 'available_props.json'
@@ -284,3 +287,73 @@ def element_group_legend(ax, groups, dir_name):
   for patch in leg.get_patches():
     patch.set_height(22)
     patch.set_y(-10)
+
+
+class DepthSelector:
+  '''Object that will hold a depth selector widget using composition.'''
+  def __init__(self, depths, orientation='vertical', **layout_kwargs):
+    self._depths = depths
+    self._boxes = [ipywidgets.Checkbox(value=False, description=depth.depth, indent=False) for depth in depths]
+
+    assert orientation in ['vertical', 'horizontal']
+    self._orientation = orientation
+    self._layout = iw.Layout(**layout_kwargs)
+
+  @property
+  def selected_depths(self):
+    selected = []
+    for depth, box in zip(self._depths, self._boxes):
+      if box.value:
+        selected.append(depth)
+    return selected
+
+  @property
+  def widget(self):
+    if self._orientation == 'vertical':
+      container = iw.VBox
+    else:
+      container = iw.HBox
+
+    return container(self._boxes, layout=self._layout)
+
+
+class ElementFilterSelector:
+  '''Object that will hold an element filter selector widget using composition.'''
+  def __init__(self, elements, orientation='vertical', input_type='slider', **layout_kwargs):
+    assert orientation in ['vertical', 'horizontal']
+    self._orientation = orientation
+    self._elements = elements
+    self._base_func = lambda n: lambda x: np.mean(x) + n * np.std(x)
+
+
+    if input_type == 'slider':
+      element_input = lambda element: iw.FloatSlider(2.0, min=0, max=4, step=0.1, description=element)
+    elif input_type == 'text':
+      element_input = lambda element: iw.HBox([iw.Textarea('2', layout=SMALLTEXTBOX), iw.HTML(element)],
+                                              layout=iw.Layout(padding='10px'))
+      
+    self._inputs = [element_input(e) for e in self._elements]
+    self._layout = iw.Layout(**layout_kwargs)
+
+
+  def get_input(self, e):
+    return self._inputs[self._elements.index(e)].children[0]
+
+  @property
+  def filter_dict(self):
+    filter_dict = {}
+    for e in self._elements:
+      val = float(self.get_input(e).value)
+      filter_dict[e] = self._base_func(val)
+    return filter_dict
+
+  @property
+  def widget(self):
+    if self._orientation == 'vertical':
+      container = iw.VBox
+      inputs = self._inputs
+    else:
+      container = iw.HBox
+      inputs = [iw.VBox([self._inputs[i], self._inputs[i+1]]) for i in range(0, len(self._inputs), 2)]
+
+    return container(inputs, layout=self._layout)
