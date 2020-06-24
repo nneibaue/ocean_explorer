@@ -328,7 +328,8 @@ class PropSelector:
       return handler(prop, val)
 
     for prop, box in zip(self._props, self._boxes):
-      box.observe(lambda b: handler_wrapper(prop, b), names='value')
+      inner = lambda b: handler(prop, b)
+      box.observe(lambda b: inner(b), names='value')
 
 
 class ElementFilter:
