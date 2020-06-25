@@ -5,6 +5,7 @@ import numpy as np
 
 
 @pytest.mark.parametrize('group,expected', [
+	                         ('b', False),  # Test single groups
                            ('a|b', False),
                            ('c|d', False),
                            ('d|c|b|a', True),  # Test different ordering
@@ -17,6 +18,7 @@ def test_ocean_utils_exclusive(group, expected):
 
 
 @pytest.mark.parametrize('group,expected', [
+	                         ('b', True),  # Test single groups
                            ('a|b', True),
                            ('c|d', True),
                            ('d|c|b|a', True),  # Test different ordering
