@@ -18,9 +18,7 @@ def check_groups(group, element_list, exclusive=True):
   if group is np.nan:
     return False
   this_group = group.split('|')
-  print('this group', this_group)
   matches = sum([element in this_group for element in element_list])
-  print('matches', matches)
   if exclusive:
     if matches == len(element_list) == len(this_group):
       return True
