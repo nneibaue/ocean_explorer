@@ -508,13 +508,15 @@ class SettingsController:
     # Save Widget
     self.save_widget = iw.Textarea(value='',
         layout=iw.Layout(width=SettingsController.INPUT_WIDTH, height=SettingsController.INPUT_HEIGHT))
-    self.save_button = iw.Button(description='Save')
+    self.save_button = iw.Button(description='Save',
+        layout=iw.Layout(width=SettingsController.BUTTON_WIDTH))
     self.save_button.on_click(self._save_settings)
 
     # Load Widget
     self.load_widget = iw.Dropdown(options=['None'],
         layout=iw.Layout(width=SettingsController.INPUT_WIDTH, height=SettingsController.INPUT_HEIGHT))
-    self.load_button = iw.Button(description='Load')
+    self.load_button = iw.Button(description='Load',
+        layout=iw.Layout(width=SettingsController.BUTTON_WIDTH))
     self.load_button.on_click(lambda b: self._load_settings(experiment_dir))
 
     fname = SETTINGS_FILE
