@@ -536,22 +536,9 @@ class SettingsController:
     
 
   def _load_settings(self, experiment_dir):
-    fname = SETTINGS_FILE
-    if experiment_dir is not None:
-      fname = os.path.join(experiment_dir, fname)
 
-    # Load settings into memory
-    with open(fname, 'r') as f:
-      self._settings = json.load(f)
-    
-    if self._w.SETTING_KEY in self._settings:
-      self._options = list(self._settings[self._w.SETTING_KEY].keys())
-    else:
-      self._options = ['None']
-
-    self.load_widget.options = self._options
-    time.sleep(1)  # Make sure the other file finishes writing
-    self._w.load_settings
+    selected = self.load_widget.value
+    self._w.load_settings(key=selected, experiment_dir=experiment_dir)
 
   @property
   def widget(self): 
