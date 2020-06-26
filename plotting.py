@@ -524,19 +524,3 @@ class SettingsController:
       container = iw.HBox
     
     return container([self.save_widget, self.load_widget], layout=self._layout)
-
-
-  @property
-  def widget(self):
-    if self._orientation == 'vertical':
-      container = iw.VBox
-      inputs = self._input_widgets
-    else:
-      container = iw.HBox
-      if self._input_type == 'text':
-        inputs = [iw.HBox([i, iw.HTML(e)], layout=iw.Layout(padding='10px')) for i, e in zip(self._input_widgets, self._elements)]
-        inputs = [iw.VBox([inputs[i], inputs[i+1]]) for i in range(0, len(inputs), 2)]
-      else:
-        inputs = self._input_widgets
-
-    return container(inputs, layout=self._layout)
