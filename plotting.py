@@ -503,7 +503,7 @@ class SettingsController:
 
 
     # Save Widget
-    self.save_widget = iw.Textarea(value='')
+    self.save_widget = iw.Textarea(value='', layout=iw.Layout(width='100px', height='25px'))
     self.save_button = iw.Button(description='Save')
     self.save_button.on_click(self._save_settings)
 
