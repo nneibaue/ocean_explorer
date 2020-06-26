@@ -338,6 +338,7 @@ class PropSelector:
       for box in self._boxes:
         box.layout = iw.Layout(flex='1')
       inputs = [title] + self._boxes
+      self._layout.update(align_items='center')
     else:
       inputs = self._boxes
 
