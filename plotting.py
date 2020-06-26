@@ -37,7 +37,7 @@ def _check_or_create_settings(dir_name=None, setting_key=None):
       return
     settings.update({setting_key: {}})
   with open(fname, 'w') as f:
-    json.dump(settings, f)
+    json.dump(settings, f, indent=2)
 
   
 
@@ -79,7 +79,7 @@ def _create_prop_list(dir_name=None, overwrite=False):
                      f'Please set `overwrite` to True if you would like to proceed')
 
   with open(fname, 'w') as f:
-    json.dump(props, f)
+    json.dump(props, f, indent=2)
 
 
 def save_new_props(element_groups, dir_name=None):
@@ -128,11 +128,11 @@ def save_new_props(element_groups, dir_name=None):
 
   # Re-save available_props (now with fewer available)
   with open(available_fname, 'w') as f:
-    json.dump(available_props, f)
+    json.dump(available_props, f, indent=2)
 
   # Re-save new property map
   with open(map_fname, 'w') as f:
-    json.dump(prop_map, f)
+    json.dump(prop_map, f, indent=2)
    
 def get_single_prop(element_group, dir_name=None):
   '''Gets the property for the given element_group, if it exists.'''
@@ -417,7 +417,7 @@ class ElementFilter:
 
     # Write settings to disk
     with open(fname, 'w') as f:
-      json.dump(settings, f)
+      json.dump(settings, f, indent=2)
 
   def load_settings(self, key='latest', experiment_dir=None):
     '''Loads settings from json file.'''
