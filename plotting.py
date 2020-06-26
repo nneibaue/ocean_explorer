@@ -503,7 +503,7 @@ class SettingsController:
     self.save_button.on_click(self._w.save_settings)
 
     # Load Widget
-    self.load_widget = iw.Dropdown(options=self._options)
+    self.load_widget = iw.Dropdown(options=['None'])
     self.load_button = iw.Button(description='Load')
     self.load_button.on_click(self._w.load_settings)
 
