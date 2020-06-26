@@ -10,11 +10,13 @@ import ipywidgets as iw
 
 COLORS = plt.cm.tab20(np.arange(20))
 PATTERNS = [None, '\\\\', '..', 'xx', '**', '++', 'oo', '00', '--', '\\\\\\', '...', 'xxx', '***', '+++', 'ooo', '000', '---']
-
 SMALLTEXTBOX = iw.Layout(width='50px', height='25px')
+PROP_FILE_AVAILABLE = 'available_props.json'
+PROP_FILE_MAP = 'property_map.json'
+
 
 def _prop_list_exists(dir_name=None):
-  fname = 'available_props.json'
+  fname = PROP_FILE_AVAILABLE
   if dir_name is not None:
     fname = os.path.join(dir_name, fname)
   
@@ -23,7 +25,7 @@ def _prop_list_exists(dir_name=None):
 def _create_prop_list(dir_name=None, overwrite=False):
   '''Creates a new list of properties and saves it to `fname`.'''
 
-  fname = 'available_props.json'
+  fname = PROP_FILE_AVAILABLE
   if dir_name is not None:
     if not os.path.isdir(dir_name):
       os.makedirs(dir_name)
@@ -64,8 +66,8 @@ def save_new_props(element_groups, dir_name=None):
     
   '''
 
-  available_fname = 'available_props.json'
-  map_fname = 'property_map.json'
+  available_fname = PROP_FILE_AVAILABLE
+  map_fname = PROP_FILE_MAP
 
   if dir_name is not None:
     available_fname = os.path.join(dir_name, available_fname)
@@ -108,7 +110,7 @@ def save_new_props(element_groups, dir_name=None):
 def get_single_prop(element_group, dir_name=None):
   '''Gets the property for the given element_group, if it exists.'''
 
-  map_fname = 'property_map.json'
+  map_fname = PROP_FILE_MAP
   if dir_name is not None:
     map_fname = os.path.join(dir_name, map_fname)
   if not os.path.exists(map_fname):
@@ -123,7 +125,7 @@ def get_single_prop(element_group, dir_name=None):
 def get_all_props(dir_name=None):
   '''Retrieves the entire property map from disk.'''
 
-  map_fname = 'property_map.json'
+  map_fname = PROP_FILE_MAP
   if dir_name is not None:
     map_fname = os.path.join(dir_name, map_fname)
   if not os.path.exists(map_fname):
