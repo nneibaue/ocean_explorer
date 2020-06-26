@@ -413,7 +413,7 @@ class ElementFilter:
       settings = json.load(f)
     
     # Modify setting
-    setttings[ElementFilter.SETTING_KEY][key] = self.value_dict
+    settings[ElementFilter.SETTING_KEY][key] = self.value_dict
 
     # Write settings to disk
     with open(fname, 'w') as f:
@@ -543,9 +543,10 @@ class SettingsController:
 
     # Load current settings into memory, if they exist
     with open(fname, 'r') as f:
-      self._settings = json.load(f)
+      settings = json.load(f)
+      print('settings from file', settings)
     
-    self._options = list(self._settings[self._w.SETTING_KEY].keys())
+    self._options = list(settings[self._w.SETTING_KEY].keys())
 
     self.load_widget.options = self._options
 
