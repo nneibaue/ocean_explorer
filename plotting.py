@@ -416,9 +416,12 @@ class ElementFilter:
       return
 
     value_dict = settings[skey][key]
-
     for e in self._elements:
-      self.get_input_widget(e).value = value_dict[e]
+      if self._input_type == 'text':
+        val = str(value_dict[e])
+      else:
+        val = value_dict[e]
+      self.get_input_widget(e).value = val
 
 
   @property
