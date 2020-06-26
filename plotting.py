@@ -334,7 +334,7 @@ class PropSelector:
     else:
       container = iw.HBox
     if self._title is not None:
-      title = iw.HTML(f'<h3>{self._title}</h3>', layout=iw.Layout(flex='4'))
+      title = iw.HTML(f'<h3>{self._title}</h3>', layout=iw.Layout(flex='auto auto'))
       for box in self._boxes:
         box.layout = iw.Layout(flex='1')
       inputs = [title] + self._boxes
