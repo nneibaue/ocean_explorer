@@ -424,6 +424,8 @@ class ElementFilter:
     _check_or_create_settings()
     
     fname = SETTINGS_FILE
+    if experiment_dir is not None:
+      fname = os.path.join(experiment_dir, fname)
     # Read settings into memory
     with open(fname, 'r') as f:
       settings = json.load(f)
