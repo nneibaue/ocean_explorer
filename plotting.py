@@ -392,8 +392,7 @@ class ElementFilter:
     skey = ElementFilter.SETTING_KEY
     if skey not in settings:
       settings[skey] = {}
-      ef_settings = settings[skey]
-    ef_settings[key] = self.value_dict
+    settings[skey][key] = self.value_dict
 
     # Write settings to disk
     with open(fname, 'w') as f:
@@ -489,6 +488,27 @@ class SettingsController:
     self._experiment_dir = experiment_dir
     _check_or_create_settings(experiment_dir)
     
+
+    self._layout = iw.Layout(**layout_kwargs)
+    assert orientation in ['horizontal', 'vertical']
+    self._orientation = orientation
+
+    self._w = w
+
+    self.load_settings(experiment_dir=experiment_dir)
+
+    # Save Widget
+    self.save_widget = iw.Textarea(value='')
+    self.save_button = iw.Button(description='Save')
+    self.save_button.on_click(self._w.save_settings)
+
+    # Load Widget
+    self.load_widget = iw.Dropdown(options=self._options)
+    self.load_button = iw.Button(description='Load')
+    self.load_button.on_click(self._w.load_settings)
+
+
+  def load_settings(self, experiment_dir):
     fname = SETTINGS_FILE
     if experiment_dir is not None:
       fname = os.path.join(experiment_dir, fname)
@@ -497,24 +517,13 @@ class SettingsController:
     with open(fname, 'r') as f:
       self._settings = json.load(f)
     
-    if w.SETTING_KEY in self._settings:
-      self._options = self._settings[w.SETTING_KEY].keys()
+    if self._w.SETTING_KEY in self._settings:
+      self._options = list(self._settings[self._w.SETTING_KEY].keys())
     else:
       self._options = ['None']
 
-    self._layout = iw.Layout(**layout_kwargs)
-    assert orientation in ['horizontal', 'vertical']
-    self._orientation = orientation
-
-    self._w = w
-
-    # Save Widget
-    self.save_widget = iw.Textarea(description='Save', value='')
-    self.save_widget.observe(self._w.save_settings)
-
-    # Load Widget
-    self.load_widget = iw.Dropdown(description='Load', options=self._options)
-    self.load_widget.observe(self._w.load_settings)
+    self.load_widget.options = self._options
+    self._w.load_settings
 
   @property
   def widget(self): 
@@ -523,4 +532,7 @@ class SettingsController:
     else:
       container = iw.HBox
     
-    return container([self.save_widget, self.load_widget], layout=self._layout)
+    save = iw.HBox(self.save_button, self.save_widget)
+    load = iw.HBox(self.load_button, self.load_widget)
+    
+    return container([save, load], layout=self._layout)
