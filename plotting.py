@@ -309,7 +309,7 @@ def element_group_legend(ax, groups, dir_name):
 
 class PropSelector:
   '''Object that will hold a prop selector widget using composition.'''
-  def __init__(self, props, orientation='vertical', description_func=lambda p: p, **layout_kwargs):
+  def __init__(self, props, orientation='vertical', title=None, description_func=lambda p: p, **layout_kwargs):
     self._props = props
     self._boxes = [iw.Checkbox(value=False,
                                description=description_func(prop), indent=False) for prop in props]
@@ -317,6 +317,7 @@ class PropSelector:
     assert orientation in ['vertical', 'horizontal']
     self._orientation = orientation
     self._layout = iw.Layout(**layout_kwargs)
+    self._title = title
 
   @property
   def selected_props(self):
@@ -332,8 +333,13 @@ class PropSelector:
       container = iw.VBox
     else:
       container = iw.HBox
+    if self._title is not None:
+      title = iw.HTML(f'<h3>{self._title}</h3>')
+      inputs = [title] + self._boxes
+    else:
+      inputs = self._boxes
 
-    return container(self._boxes, layout=self._layout)
+    return container(inputs, layout=self._layout)
 
 
   def observe(self, handler):
