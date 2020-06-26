@@ -572,7 +572,7 @@ class SettingsController:
 
     with open(fname, 'r') as f:
       settings = json.load(f)
-    options = settings[self._setting_key]
+    options = settings[self._setting_key].keys()
     self.load_widget.options = options
 
 
