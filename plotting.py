@@ -555,7 +555,7 @@ class SettingsController:
 
   def save_settings(self):
     text = self.save_widget.value
-    self._w.save_settings(key=text)
+    self._w.save_settings(key=text, experiment_dir=self._experiment_dir)
 
     # Update load widget with new value
     self.save_widget.value = ''
