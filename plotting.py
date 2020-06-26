@@ -559,7 +559,7 @@ class SettingsController:
 
     # Update load widget with new value
     self.save_widget.value = ''
-    self._refresh_settings()
+    self.refresh_settings()
 
   def load_settings(self):
     selected = self.load_widget.value
