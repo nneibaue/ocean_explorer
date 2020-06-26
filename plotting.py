@@ -495,7 +495,6 @@ class SettingsController:
 
     self._w = w
 
-    self.load_settings(experiment_dir=experiment_dir)
 
     # Save Widget
     self.save_widget = iw.Textarea(value='')
@@ -507,6 +506,7 @@ class SettingsController:
     self.load_button = iw.Button(description='Load')
     self.load_button.on_click(self._w.load_settings)
 
+    self.load_settings(experiment_dir=experiment_dir)
 
   def load_settings(self, experiment_dir):
     fname = SETTINGS_FILE
