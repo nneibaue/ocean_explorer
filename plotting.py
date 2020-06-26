@@ -532,7 +532,7 @@ class SettingsController:
     else:
       container = iw.HBox
     
-    save = iw.HBox(self.save_button, self.save_widget)
-    load = iw.HBox(self.load_button, self.load_widget)
+    save = iw.HBox([self.save_button, self.save_widget])
+    load = iw.HBox([self.load_button, self.load_widget])
     
     return container([save, load], layout=self._layout)
