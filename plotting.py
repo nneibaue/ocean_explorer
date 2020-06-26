@@ -506,7 +506,7 @@ class SettingsController:
     self.load_button = iw.Button(description='Load')
     self.load_button.on_click(self._load_settings)
 
-    self.load_settings(experiment_dir=experiment_dir)
+    self._load_settings(experiment_dir=experiment_dir)
 
   def _save_settings(self):
     text = self.save_widget.value
