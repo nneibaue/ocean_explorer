@@ -349,6 +349,7 @@ class PropSelector:
 
 
 class ElementFilter:
+  SETTING_KEY = 'element_filter'
   '''Object that will hold an element filter selector widget using composition.'''
   def __init__(self, elements, orientation='vertical', input_type='slider', **layout_kwargs):
     assert orientation in ['vertical', 'horizontal']
@@ -369,12 +370,12 @@ class ElementFilter:
                                               
       
     self._input_type = input_type
-    self._inputs = [element_input(e) for e in self._elements]
+    self._input_widgets = [element_input(e) for e in self._elements]
     self._layout = iw.Layout(**layout_kwargs)
 
 
-  def get_input(self, e):
-    return self._inputs[self._elements.index(e)]
+  def get_input_widget(self, e):
+    return self._input_widgets[self._elements.index(e)]
 
   def save_settings(self, key='latest', experiment_dir=None):
     '''Saves the current element filter as `key` in "settings.json"'''
@@ -388,29 +389,50 @@ class ElementFilter:
       settings = json.load(f)
 
     # Edit the settings
-    if 'element_filter' not in settings:
-      settings['element_filter'] = {}
-      ef_settings = settings['element_filter']
+    skey = ElementFilter.SETTING_KEY
+    if skey not in settings:
+      settings[skey] = {}
+      ef_settings = settings[skey]
     ef_settings[key] = self.value_dict
 
     # Write settings to disk
     with open(fname, 'w') as f:
       json.dump(settings, f)
 
+  def load_settings(self, key='latest', experiment_dir=None):
+    '''Loads settings from json file.'''
+    _check_or_create_settings()
+    
+    fname = SETTINGS_FILE
+    # Read settings into memory
+    with open(fname, 'r') as f:
+      settings = json.load(f)
+
+    skey = ElementFilter.SETTING_KEY
+    if skey not in settings:
+      print('NO SETTINGS FILE FOUND')
+      return
+
+    value_dict = settings[skey][key]
+
+    for e in self._elements:
+      self.get_input_widget(e).value = value_dict[e]
+
 
   @property
   def filter_dict(self):
     filter_dict = {}
     for e in self._elements:
-      val = float(self.get_input(e).value)
+      val = float(self.get_input_widget(e).value)
       filter_dict[e] = self._base_func(val)
     return filter_dict
+
 
   @property
   def value_dict(self):
     vals = {}
     for e in self._elements:
-      val = float(self.get_input(e).value)
+      val = float(self.get_input_widget(e).value)
       vals[e] = val
     return vals
 
@@ -427,14 +449,14 @@ class ElementFilter:
   def widget(self):
     if self._orientation == 'vertical':
       container = iw.VBox
-      inputs = self._inputs
+      inputs = self._input_widgets
     else:
       container = iw.HBox
       if self._input_type == 'text':
-        inputs = [iw.HBox([i, iw.HTML(e)], layout=iw.Layout(padding='10px')) for i, e in zip(self._inputs, self._elements)]
+        inputs = [iw.HBox([i, iw.HTML(e)], layout=iw.Layout(padding='10px')) for i, e in zip(self._input_widgets, self._elements)]
         inputs = [iw.VBox([inputs[i], inputs[i+1]]) for i in range(0, len(inputs), 2)]
       else:
-        inputs = self._inputs
+        inputs = self._input_widgets
 
     return container(inputs, layout=self._layout)
 
@@ -458,3 +480,63 @@ class ElementFilterWithBoxes(ElementFilter):
       if box.value:
         selected.append(element)
     return selected
+
+
+class SettingsController:
+  def __init__(self, w, orientation='vertical', experiment_dir=None, **layout_kwargs):
+    '''Creates a settings widget for widget `w`'''
+
+    self._experiment_dir = experiment_dir
+    _check_or_create_settings(experiment_dir)
+    
+    fname = SETTINGS_FILE
+    if experiment_dir is not None:
+      fname = os.path.join(experiment_dir, fname)
+
+    # Load settings into memory
+    with open(fname, 'r') as f:
+      self._settings = json.load(f)
+    
+    if w.SETTING_KEY in self._settings:
+      self._options = self._settings[w.SETTING_KEY].keys()
+    else:
+      self._options = ['None']
+
+    self._layout = iw.Layout(**layout_kwargs)
+    assert orientation in ['horizontal', 'vertical']
+    self._orientation = orientation
+
+    self._w = w
+
+    # Save Widget
+    self.save_widget = iw.Textarea(description='Save', value='')
+    self.save_widget.observe(self._w.save_settings)
+
+    # Load Widget
+    self.load_widget = iw.Dropdown(description='Load', options=self._options)
+    self.load_widget.observe(self._w.load_settings)
+
+  @property
+  def widget(self): 
+    if self._orientation == 'vertical':
+      container = iw.VBox
+    else:
+      container = iw.HBox
+    
+    return container([self.save_widget, self.load_widget], layout=self._layout)
+
+
+  @property
+  def widget(self):
+    if self._orientation == 'vertical':
+      container = iw.VBox
+      inputs = self._input_widgets
+    else:
+      container = iw.HBox
+      if self._input_type == 'text':
+        inputs = [iw.HBox([i, iw.HTML(e)], layout=iw.Layout(padding='10px')) for i, e in zip(self._input_widgets, self._elements)]
+        inputs = [iw.VBox([inputs[i], inputs[i+1]]) for i in range(0, len(inputs), 2)]
+      else:
+        inputs = self._input_widgets
+
+    return container(inputs, layout=self._layout)
