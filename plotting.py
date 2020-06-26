@@ -17,18 +17,29 @@ PROP_FILE_MAP = 'property_map.json'
 SETTINGS_FILE = 'settings.json'
 
 
-def _check_or_create_settings(dir_name=None):
+def _check_or_create_settings(dir_name=None, setting_key=None):
   '''Checks to see if a settings file exists or create a new one'''
   fname = SETTINGS_FILE
   if dir_name is not None:
     fname = os.path.join(dir_name, fname)
   
-  if os.path.exists(fname):
-    return
-  
-  # Make a blank settings file 
+  if not os.path.exists(fname):
+    if setting_key is not None:
+      settings = {setting_key: {}}
+    else:
+      settings = {}
+  else:
+    if setting_key is None:
+      return
+    with open(fname, 'r') as f:
+      settings = json.load(f)
+    if setting_key in settings:
+      return
+    settings.update({setting_key: {}})
   with open(fname, 'w') as f:
-    json.dump({}, f)
+    json.dump(settings, f)
+
+  
 
 
 def _prop_list_exists(dir_name=None):
@@ -391,7 +402,8 @@ class ElementFilter:
     '''Saves the current element filter as `key` in "settings.json"'''
     if not key:
       return
-    _check_or_create_settings(experiment_dir)
+    _check_or_create_settings(experiment_dir, setting_key=ElementFilter.SETTING_KEY)
+
     fname = SETTINGS_FILE
     if experiment_dir is not None:
       fname = os.path.join(experiment_dir, fname)
@@ -399,12 +411,9 @@ class ElementFilter:
     # Read settings into memory
     with open(fname, 'r') as f:
       settings = json.load(f)
-
-    # Edit the settings
-    skey = ElementFilter.SETTING_KEY
-    if skey not in settings:
-      settings[skey] = {}
-    settings[skey][key] = self.value_dict
+    
+    # Modify setting
+    setttings[ElementFilter.SETTING_KEY][key] = self.value_dict
 
     # Write settings to disk
     with open(fname, 'w') as f:
@@ -504,7 +513,7 @@ class SettingsController:
     '''Creates a settings widget for widget `w`'''
 
     self._experiment_dir = experiment_dir
-    _check_or_create_settings(experiment_dir)
+    _check_or_create_settings(experiment_dir, setting_key=w.SETTING_KEY)
     
 
     self._layout = iw.Layout(**layout_kwargs)
@@ -532,32 +541,29 @@ class SettingsController:
     if experiment_dir is not None:
       fname = os.path.join(experiment_dir, fname)
 
-    # Load settings into memory
+    # Load current settings into memory, if they exist
     with open(fname, 'r') as f:
       self._settings = json.load(f)
     
-    if self._w.SETTING_KEY in self._settings:
-      self._options = list(self._settings[self._w.SETTING_KEY].keys())
-    else:
-      self._options = ['None']
+    self._options = list(self._settings[self._w.SETTING_KEY].keys())
 
     self.load_widget.options = self._options
 
 
   def _save_settings(self, b):
     text = self.save_widget.value
-    self._settings[self._w.SETTING_KEY].update({text: self._w.value_dict})
-    self._options = list(self._settings[self._w.SETTING_KEY].keys())
+    self._w.save_settings(key=text)
+
+    # Update load widget with new value
+    self._options.append(text)
     self.load_widget.options = self._options
     self.save_widget.value = ''
 
-    self._w.save_settings(key=text)
-    
 
   def _load_settings(self, experiment_dir):
-
     selected = self.load_widget.value
     self._w.load_settings(key=selected, experiment_dir=experiment_dir)
+
 
   @property
   def widget(self): 
