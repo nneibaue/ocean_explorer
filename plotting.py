@@ -558,7 +558,6 @@ class SettingsController:
     self._w.save_settings(key=text)
 
     # Update load widget with new value
-    self._options.append(text)
     self.save_widget.value = ''
     self._refresh_settings()
 
