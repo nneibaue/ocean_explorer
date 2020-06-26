@@ -368,6 +368,18 @@ class ElementFilter:
     return filter_dict
 
   @property
+  def values(self):
+    vals = []
+    for e in self._elements:
+      vals.append(float(self.get_input(e).value))
+    return vals
+
+  @property
+  def value_string(self):
+    labels = [f'{e}: {val} | ' for e, val in zip(self._elements, self.values)]
+    return ''.join(labels)
+    
+  @property
   def widget(self):
     if self._orientation == 'vertical':
       container = iw.VBox
