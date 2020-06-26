@@ -7,6 +7,7 @@ import base64
 import json
 import os
 import ipywidgets as iw
+import time
 
 COLORS = plt.cm.tab20(np.arange(20))
 PATTERNS = [None, '\\\\', '..', 'xx', '**', '++', 'oo', '00', '--', '\\\\\\', '...', 'xxx', '***', '+++', 'ooo', '000', '---']
@@ -379,6 +380,8 @@ class ElementFilter:
 
   def save_settings(self, key='latest', experiment_dir=None):
     '''Saves the current element filter as `key` in "settings.json"'''
+    if not key:
+      return
     _check_or_create_settings(experiment_dir)
     fname = SETTINGS_FILE
     if experiment_dir is not None:
@@ -506,12 +509,26 @@ class SettingsController:
     self.load_button = iw.Button(description='Load')
     self.load_button.on_click(lambda b: self._load_settings(experiment_dir))
 
-    self._load_settings(experiment_dir=experiment_dir)
+    fname = SETTINGS_FILE
+    if experiment_dir is not None:
+      fname = os.path.join(experiment_dir, fname)
+
+    # Load settings into memory
+    with open(fname, 'r') as f:
+      self._settings = json.load(f)
+    
+    if self._w.SETTING_KEY in self._settings:
+      self._options = list(self._settings[self._w.SETTING_KEY].keys())
+    else:
+      self._options = ['None']
 
   def _save_settings(self, b):
     text = self.save_widget.value
-    self._w.save_settings(key=text)
+    self._settings[self._w.SETTING_KEY].update(key=text)
+    self.load_widget.options = list(self._settings[self._w.SETTING_KEY].keys())
 
+    self._w.save_settings(key=text)
+    
 
   def _load_settings(self, experiment_dir):
     fname = SETTINGS_FILE
@@ -528,6 +545,7 @@ class SettingsController:
       self._options = ['None']
 
     self.load_widget.options = self._options
+    time.sleep(1)  # Make sure the other file finishes writing
     self._w.load_settings
 
   @property
