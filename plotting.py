@@ -504,11 +504,11 @@ class SettingsController:
     # Load Widget
     self.load_widget = iw.Dropdown(options=['None'])
     self.load_button = iw.Button(description='Load')
-    self.load_button.on_click(self._load_settings)
+    self.load_button.on_click(lambda b: self._load_settings(experiment_dir))
 
     self._load_settings(experiment_dir=experiment_dir)
 
-  def _save_settings(self):
+  def _save_settings(self, b):
     text = self.save_widget.value
     self._w.save_settings(key=text)
 
