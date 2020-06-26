@@ -13,6 +13,21 @@ PATTERNS = [None, '\\\\', '..', 'xx', '**', '++', 'oo', '00', '--', '\\\\\\', '.
 SMALLTEXTBOX = iw.Layout(width='50px', height='25px')
 PROP_FILE_AVAILABLE = 'available_props.json'
 PROP_FILE_MAP = 'property_map.json'
+SETTINGS_FILE = 'settings.json'
+
+
+def _check_or_create_settings(dir_name=None):
+  '''Checks to see if a settings file exists or create a new one'''
+  fname = SETTINGS_FILE
+  if dir_name is not None:
+    fname = os.path.join(dir_name, fname)
+  
+  if os.path.exists(fname):
+    return
+  
+  # Make a blank settings file 
+  with open(fname, 'w') as f:
+    json.dump({}, f)
 
 
 def _prop_list_exists(dir_name=None):
@@ -361,6 +376,28 @@ class ElementFilter:
   def get_input(self, e):
     return self._inputs[self._elements.index(e)]
 
+  def save_settings(self, key='latest', experiment_dir=None):
+    '''Saves the current element filter as `key` in "settings.json"'''
+    _check_or_create_settings(experiment_dir)
+    fname = SETTINGS_FILE
+    if experiment_dir is not None:
+      fname = os.path.join(experiment_dir, fname)
+      
+    # Read settings into memory
+    with open(fname, 'r') as f:
+      settings = json.load(f)
+
+    # Edit the settings
+    if 'element_filter' not in settings:
+      settings['element_filter'] = {}
+      ef_settings = settings['element_filter']
+    ef_settings[key] = self.value_dict
+
+    # Write settings to disk
+    with open(fname, 'w') as f:
+      json.dump(settings, f)
+
+
   @property
   def filter_dict(self):
     filter_dict = {}
@@ -370,11 +407,16 @@ class ElementFilter:
     return filter_dict
 
   @property
-  def values(self):
-    vals = []
+  def value_dict(self):
+    vals = {}
     for e in self._elements:
-      vals.append(float(self.get_input(e).value))
+      val = float(self.get_input(e).value)
+      vals[e] = val
     return vals
+
+  @property
+  def values(self):
+    return list(self.value_dict.values())
 
   @property
   def value_string(self):
