@@ -488,8 +488,8 @@ class ElementFilterWithBoxes(ElementFilter):
 
 
 class SettingsController:
-  BUTTON_WIDTH = '80px'
-  INPUT_WIDTH = '80px'
+  BUTTON_WIDTH = '70px'
+  INPUT_WIDTH = '150px'
   INPUT_HEIGHT = '25px'
   def __init__(self, w, orientation='vertical', experiment_dir=None, **layout_kwargs):
     '''Creates a settings widget for widget `w`'''
