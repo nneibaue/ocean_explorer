@@ -522,10 +522,14 @@ class SettingsController:
     else:
       self._options = ['None']
 
+    self.load_widget.options = self._options
+
+
   def _save_settings(self, b):
     text = self.save_widget.value
-    self._settings[self._w.SETTING_KEY].update(key=text)
-    self.load_widget.options = list(self._settings[self._w.SETTING_KEY].keys())
+    self._settings[self._w.SETTING_KEY].update({text: self._w.value_dict})
+    self._options = list(self._settings[self._w.SETTING_KEY].keys())
+    self.load_widget.options = self._options
 
     self._w.save_settings(key=text)
     
