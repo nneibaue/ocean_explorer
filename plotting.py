@@ -499,16 +499,21 @@ class SettingsController:
     # Save Widget
     self.save_widget = iw.Textarea(value='')
     self.save_button = iw.Button(description='Save')
-    self.save_button.on_click(self._w.save_settings)
+    self.save_button.on_click(self._save_settings)
 
     # Load Widget
     self.load_widget = iw.Dropdown(options=['None'])
     self.load_button = iw.Button(description='Load')
-    self.load_button.on_click(self._w.load_settings)
+    self.load_button.on_click(self._load_settings)
 
     self.load_settings(experiment_dir=experiment_dir)
 
-  def load_settings(self, experiment_dir):
+  def _save_settings(self):
+    text = self.save_widget.value
+    self._w.save_settings(key=text)
+
+
+  def _load_settings(self, experiment_dir):
     fname = SETTINGS_FILE
     if experiment_dir is not None:
       fname = os.path.join(experiment_dir, fname)
@@ -534,5 +539,6 @@ class SettingsController:
     
     save = iw.HBox([self.save_button, self.save_widget])
     load = iw.HBox([self.load_button, self.load_widget])
+    title = iw.HTML('<h2>Settings</h2>')
     
-    return container([save, load], layout=self._layout)
+    return container([title, save, load], layout=self._layout)
