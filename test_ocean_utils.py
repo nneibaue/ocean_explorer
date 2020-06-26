@@ -18,13 +18,13 @@ def test_ocean_utils_exclusive(group, expected):
 
 
 @pytest.mark.parametrize('group,expected', [
-	                         ('b', True),  # Test single groups
+	                         ('b', False),  # Test single groups
                            ('a|b', True),
-                           ('c|d', True),
+                           ('c|d', False),
                            ('d|c|b|a', True),  # Test different ordering
                            ('c|a|b|d', True),
-                           ('c|a|b|f|g', False),
+                           ('c|a|b|f|g', True),
                            (np.nan, False)]) # Test NaN vals
 def test_ocean_utils_not_exclusive(group, expected):
- element_list = ['a', 'b', 'c', 'd']
+ element_list = ['a', 'b']
  assert ocean_utils.check_groups(group, element_list, exclusive=False) == expected
