@@ -509,33 +509,37 @@ class SettingsController:
   BUTTON_WIDTH = '70px'
   INPUT_WIDTH = '150px'
   INPUT_HEIGHT = '25px'
+  TOTAL_WIDTH = '220px'
   def __init__(self, w, orientation='vertical', experiment_dir=None, **layout_kwargs):
     '''Creates a settings widget for widget `w`'''
 
     self._experiment_dir = experiment_dir
     _check_or_create_settings(experiment_dir, setting_key=w.SETTING_KEY)
+    self._setting_key = w.SETTING_KEY
     
 
     self._layout = iw.Layout(**layout_kwargs)
     assert orientation in ['horizontal', 'vertical']
     self._orientation = orientation
 
-    self._w = w
-
-
     # Save Widget
     self.save_widget = iw.Textarea(value='',
         layout=iw.Layout(width=SettingsController.INPUT_WIDTH, height=SettingsController.INPUT_HEIGHT))
     self.save_button = iw.Button(description='Save',
         layout=iw.Layout(width=SettingsController.BUTTON_WIDTH))
-    self.save_button.on_click(self._save_settings)
+    self.save_button.on_click(lambda b: self.save_settings())
 
     # Load Widget
     self.load_widget = iw.Dropdown(options=['None'],
         layout=iw.Layout(width=SettingsController.INPUT_WIDTH, height=SettingsController.INPUT_HEIGHT))
     self.load_button = iw.Button(description='Load',
         layout=iw.Layout(width=SettingsController.BUTTON_WIDTH))
-    self.load_button.on_click(lambda b: self._load_settings(experiment_dir))
+    self.load_button.on_click(lambda b: self.load_settings())
+
+    # Refresh button
+    self.refresh_button = iw.Button(description='Refresh Settings',
+        layout=iw.Layout(width=SettingsController.TOTAL_WIDTH))
+    self.refresh_button.on_click(lambda b: self.refresh_settings())
 
     fname = SETTINGS_FILE
     if experiment_dir is not None:
@@ -544,26 +548,33 @@ class SettingsController:
     # Load current settings into memory, if they exist
     with open(fname, 'r') as f:
       settings = json.load(f)
-      print('settings from file', settings)
     
-    self._options = list(settings[self._w.SETTING_KEY].keys())
+    options = list(settings[self._setting_key].keys())
+    self.load_widget.options = options
+    self._w = w
 
-    self.load_widget.options = self._options
-
-
-  def _save_settings(self, b):
+  def save_settings(self):
     text = self.save_widget.value
     self._w.save_settings(key=text)
 
     # Update load widget with new value
     self._options.append(text)
-    self.load_widget.options = self._options
     self.save_widget.value = ''
+    self._refresh_settings()
 
-
-  def _load_settings(self, experiment_dir):
+  def load_settings(self):
     selected = self.load_widget.value
-    self._w.load_settings(key=selected, experiment_dir=experiment_dir)
+    self._w.load_settings(key=selected, experiment_dir=self._experiment_dir)
+
+  def refresh_settings(self):
+    fname = SETTINGS_FILE
+    if self._experiment_dir is not None:
+      fname = os.path.join(self._experiment_dir, fname)
+
+    with open(fname, 'r') as f:
+      settings = json.load(f)
+    options = settings[self._setting_key]
+    self.load_widget.options = options
 
 
   @property
@@ -572,9 +583,11 @@ class SettingsController:
       container = iw.VBox
     else:
       container = iw.HBox
+      self.refresh_button.layout.width = self.BUTTON_WIDTH
     
     save = iw.HBox([self.save_button, self.save_widget])
     load = iw.HBox([self.load_button, self.load_widget])
+    refresh = self.refresh_button
     title = iw.HTML('<h2>Settings</h2>')
     
-    return container([title, save, load], layout=self._layout)
+    return container([title, save, load, refresh], layout=self._layout)
