@@ -348,8 +348,8 @@ class ElementFilter:
       element_input = lambda element: iw.FloatSlider(2.0, min=0, max=4, step=0.1,
                                                      description=element, orientation=slider_orientation)
     elif input_type == 'text':
-      element_input = lambda element: iw.HBox([iw.Textarea('2', layout=SMALLTEXTBOX), iw.HTML(element)],
-                                              layout=iw.Layout(padding='10px'))
+      element_input = lambda element:iw.Textarea('2', layout=SMALLTEXTBOX)
+                                              
       
     self._input_type = input_type
     self._inputs = [element_input(e) for e in self._elements]
@@ -378,7 +378,7 @@ class ElementFilter:
   def value_string(self):
     labels = [f'{e}: {val} | ' for e, val in zip(self._elements, self.values)]
     return ''.join(labels)
-    
+
   @property
   def widget(self):
     if self._orientation == 'vertical':
@@ -387,7 +387,8 @@ class ElementFilter:
     else:
       container = iw.HBox
       if self._input_type == 'text':
-        inputs = [iw.VBox([self._inputs[i], self._inputs[i+1]]) for i in range(0, len(self._inputs), 2)]
+        inputs = [iw.HBox([i, iw.HTML(e)], layout=iw.Layout(padding='10px')) for i, e in zip(self._inputs, self._elements)]
+        inputs = [iw.VBox([inputs[i], inputs[i+1]]) for i in range(0, len(inputs), 2)]
       else:
         inputs = self._inputs
 
