@@ -488,6 +488,9 @@ class ElementFilterWithBoxes(ElementFilter):
 
 
 class SettingsController:
+  BUTTON_WIDTH = '80px'
+  INPUT_WIDTH = '80px'
+  INPUT_HEIGHT = '25px'
   def __init__(self, w, orientation='vertical', experiment_dir=None, **layout_kwargs):
     '''Creates a settings widget for widget `w`'''
 
@@ -503,12 +506,14 @@ class SettingsController:
 
 
     # Save Widget
-    self.save_widget = iw.Textarea(value='', layout=iw.Layout(width='100px', height='25px'))
+    self.save_widget = iw.Textarea(value='',
+        layout=iw.Layout(width=SettingsController.INPUT_WIDTH, height=SettingsController.INPUT_HEIGHT))
     self.save_button = iw.Button(description='Save')
     self.save_button.on_click(self._save_settings)
 
     # Load Widget
-    self.load_widget = iw.Dropdown(options=['None'])
+    self.load_widget = iw.Dropdown(options=['None'],
+        layout=iw.Layout(width=SettingsController.INPUT_WIDTH, height=SettingsController.INPUT_HEIGHT))
     self.load_button = iw.Button(description='Load')
     self.load_button.on_click(lambda b: self._load_settings(experiment_dir))
 
