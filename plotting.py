@@ -400,7 +400,6 @@ class ElementFilter:
 
     self.experiment_dir = experiment_dir
     self.settings_file = fname
-    self._load_settings(key='latest', experiment_dir=experiment_dir)
 
 
   def get_input_widget(self, e):
