@@ -557,7 +557,7 @@ class SettingsController:
     self._w.load_settings(key=selected)
 
   def refresh_settings(self):
-    with open(self._settings_file, 'r') as f:
+    with open(self.settings_file, 'r') as f:
       settings = json.load(f)
     options = settings[self._setting_key].keys()
     self.load_widget.options = options
