@@ -372,7 +372,7 @@ class PropSelector:
 class ElementFilter:
   SETTING_KEY = 'element_filter'
   '''Object that will hold an element filter selector widget using composition.'''
-  def __init__(self, elements, orientation='vertical', input_type='slider', **layout_kwargs):
+  def __init__(self, elements, orientation='vertical', input_type='slider', experiment_dir=None, **layout_kwargs):
     assert orientation in ['vertical', 'horizontal']
     self._orientation = orientation
     self._elements = elements
@@ -394,48 +394,45 @@ class ElementFilter:
     self._input_widgets = [element_input(e) for e in self._elements]
     self._layout = iw.Layout(**layout_kwargs)
 
+    fname = SETTINGS_FILE
+    if experiment_dir is not None:
+      fname = os.path.join(experiment_dir, fname)
+
+    self.experiment_dir = experiment_dir
+    self.settings_file = fname
+    self._load_settings(key='latest', experiment_dir=experiment_dir)
+
 
   def get_input_widget(self, e):
     return self._input_widgets[self._elements.index(e)]
 
-  def save_settings(self, key='latest', experiment_dir=None):
+  def save_settings(self, key='latest'):
     '''Saves the current element filter as `key` in "settings.json"'''
     if not key:
       return
-    _check_or_create_settings(experiment_dir, setting_key=ElementFilter.SETTING_KEY)
+    _check_or_create_settings(self._experiment_dir, setting_key=self.SETTING_KEY)
 
-    fname = SETTINGS_FILE
-    if experiment_dir is not None:
-      fname = os.path.join(experiment_dir, fname)
       
     # Read settings into memory
-    with open(fname, 'r') as f:
+    with open(self.settings_file, 'r') as f:
       settings = json.load(f)
     
     # Modify setting
     settings[ElementFilter.SETTING_KEY][key] = self.value_dict
 
     # Write settings to disk
-    with open(fname, 'w') as f:
+    with open(self.settings_file, 'w') as f:
       json.dump(settings, f, indent=2)
 
-  def load_settings(self, key='latest', experiment_dir=None):
+  def load_settings(self, key='latest'):
     '''Loads settings from json file.'''
     _check_or_create_settings()
     
-    fname = SETTINGS_FILE
-    if experiment_dir is not None:
-      fname = os.path.join(experiment_dir, fname)
     # Read settings into memory
-    with open(fname, 'r') as f:
+    with open(self.settings_file, 'r') as f:
       settings = json.load(f)
 
-    skey = ElementFilter.SETTING_KEY
-    if skey not in settings:
-      print('NO SETTINGS FILE FOUND')
-      return
-
-    value_dict = settings[skey][key]
+    value_dict = settings[self.SETTING_KEY][key]
     for e in self._elements:
       if self._input_type == 'text':
         val = str(value_dict[e])
@@ -515,9 +512,11 @@ class SettingsController:
   def __init__(self, w, orientation='vertical', experiment_dir=None, **layout_kwargs):
     '''Creates a settings widget for widget `w`'''
 
-    self._experiment_dir = experiment_dir
-    _check_or_create_settings(experiment_dir, setting_key=w.SETTING_KEY)
+    self.experiment_dir = w.experiment_dir
+    self.settings_file = w.settings_file
     self._setting_key = w.SETTING_KEY
+
+    _check_or_create_settings(experiment_dir, setting_key=w.SETTING_KEY)
     
 
     self._layout = iw.Layout(**layout_kwargs)
@@ -543,40 +542,26 @@ class SettingsController:
         layout=iw.Layout(width=SettingsController.TOTAL_WIDTH))
     self.refresh_button.on_click(lambda b: self.refresh_settings())
 
-    fname = SETTINGS_FILE
-    if experiment_dir is not None:
-      fname = os.path.join(experiment_dir, fname)
+    # Load current settings from file
+    self.refresh_settings()
 
-    # Load current settings into memory, if they exist
-    with open(fname, 'r') as f:
-      settings = json.load(f)
-    
-    options = list(settings[self._setting_key].keys())
-    self.load_widget.options = options
     self._w = w
 
   def save_settings(self):
     text = self.save_widget.value
     self._w.save_settings(key=text, experiment_dir=self._experiment_dir)
-
-    # Update load widget with new value
     self.save_widget.value = ''
     self.refresh_settings()
 
   def load_settings(self):
     selected = self.load_widget.value
-    self._w.load_settings(key=selected, experiment_dir=self._experiment_dir)
+    self._w.load_settings(key=selected)
 
   def refresh_settings(self):
-    fname = SETTINGS_FILE
-    if self._experiment_dir is not None:
-      fname = os.path.join(self._experiment_dir, fname)
-
-    with open(fname, 'r') as f:
+    with open(self._settings_file, 'r') as f:
       settings = json.load(f)
     options = settings[self._setting_key].keys()
     self.load_widget.options = options
-
 
   @property
   def widget(self): 
