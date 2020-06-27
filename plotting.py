@@ -401,6 +401,9 @@ class ElementFilter:
     self.experiment_dir = experiment_dir
     self.settings_file = fname
 
+    # Make sure there is a settings file present with the right key for this widget
+    _check_or_create_settings(self.experiment_dir, setting_key=self.SETTING_KEY)
+
 
   def get_input_widget(self, e):
     return self._input_widgets[self._elements.index(e)]
@@ -409,9 +412,7 @@ class ElementFilter:
     '''Saves the current element filter as `key` in "settings.json"'''
     if not key:
       return
-    _check_or_create_settings(self._experiment_dir, setting_key=self.SETTING_KEY)
 
-      
     # Read settings into memory
     with open(self.settings_file, 'r') as f:
       settings = json.load(f)
@@ -548,7 +549,7 @@ class SettingsController:
 
   def save_settings(self):
     text = self.save_widget.value
-    self._w.save_settings(key=text, experiment_dir=self._experiment_dir)
+    self._w.save_settings(key=text)
     self.save_widget.value = ''
     self.refresh_settings()
 
