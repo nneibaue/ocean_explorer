@@ -306,6 +306,7 @@ def element_group_legend(ax, groups, dir_name):
   props = get_all_props(dir_name)
   patches = []
   for group in groups:
+    props[group]['edgecolor'] = 'k'
     patches.append(mpatches.Patch(**props[group], label=group))
 
   leg = ax.legend(handles=patches,
