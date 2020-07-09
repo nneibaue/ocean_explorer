@@ -268,19 +268,19 @@ def ribbon_plot(depths,
 
   i=0
   yticklabels = []
-  for depth in depths:
+  for nd, depth in enumerate(depths):
     depth.apply_element_filter(element_filter, combine_detsums=combine_detsums)
     if combine_scans:
       scans = [depth.combined_scan]
-      yticklabels.append(depth.depth)
+      yticklabels.append(f'depth {nd}')
     else:
       scans = depth.scans
 
-    for scan in scans:
+    for ns, scan in enumerate(scans):
       plot_scan(scan, i)
       i += 1
       if not combine_scans:
-        yticklabels.append(f'{depth.depth}: {scan.name}')
+        yticklabels.append(f'depth {nd}: scan {sd}')
 
   ax.set_xlim(0, 1.13)
 
@@ -291,6 +291,7 @@ def ribbon_plot(depths,
   
   ax.set_yticks(np.arange(0, i))
   ax.set_yticklabels(yticklabels)
+  ax.xaxis.set_visible(False)
   ax.set_ylim(-0.5, i-0.5)
   ax.set_title(f'{filter_by} {normalize_by}', fontsize=16, fontweight='bold')
   plt.close()
@@ -317,9 +318,6 @@ def element_group_legend(ax, groups, dir_name):
     patch.set_height(22)
     patch.set_y(-10)
 
-  yticklabels = [f'depth {i}' for i, _ in enumerate(yticklabels)]
-  ax.set_yticklabels(yticklabels)
-  ax.xaxis.set_visible(False)
 
 class PropSelector:
   '''Object that will hold a prop selector widget using composition.'''
