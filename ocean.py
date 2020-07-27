@@ -8,6 +8,9 @@ from matplotlib import pyplot as plt
 from functools import reduce
 from plotting import encode_matplotlib_fig
 
+DRIVE_BASE = '/content/gdrive/My Drive'
+PROFILE_FILE_FILTER = ['__profile__', 'available_props.json', 'property_map.json', 'settings.json']
+
 class Detsum:
   file_template = '^detsum_([a-zA-Z]{1,2})_([A-Z])(_norm)?.txt$'
   def __init__(self, path):
@@ -498,3 +501,45 @@ class Depth:
 
   def __repr__(self):
     return f'Depth({self.depth}, scans: {[s.scan_number for s in self.scans]})'
+
+
+class Profile:
+  '''A Container class to instantiate and hold Depth objects'''
+
+  def __init__(self, experiment_dir,
+               elements_of_interest=None,
+               orbitals=['K'],
+               normalized=True):
+
+    depths = []
+    for dir_or_file in os.listdir(os.path.join(DRIVE_BASE, experiment_dir)):
+      if dir_or_file in PROFILE_FILE_FILTER:
+        continue
+      try:
+        fullpath = os.path.join(DRIVE_BASE, experiment_dir, dir_or_file)
+        d = Depth(os.path.join(fullpath),
+                  elements_of_interest=elements_of_interest,
+                  orbitals=['K'],
+                  normalized=True)
+        depths.append(d)
+        print(f"Successfully imported data for {d.depth}")
+      except NameError as e:
+        print(e)
+        continue
+
+    self.depths = depths
+
+  @property
+  def scans(self):
+    scans = []
+    for d in self.depths:
+      scans += d.scans
+    return scans
+
+  @property
+  def detsums(self):
+    detsums = []
+    for d in self.depths:
+      detsums += d.detsums
+    return detsums
+            
