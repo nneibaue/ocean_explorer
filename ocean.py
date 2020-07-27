@@ -516,7 +516,7 @@ class Profile:
       if dir_or_file in PROFILE_FILE_FILTER:
         continue
       try:
-        fullpath = os.path.join(DRIVE_BASE, experiment_dir, d)
+        fullpath = os.path.join(DRIVE_BASE, experiment_dir, dir_or_file)
         d = ocean.Depth(os.path.join(fullpath),
                         elements_of_interest=elements_of_interest,
                         orbitals=['K'],
