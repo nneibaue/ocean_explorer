@@ -528,6 +528,7 @@ class Profile:
         continue
 
     self.depths = depths
+    print(type(depths[0].scans[0]))
 
   @property
   def scans(self):
