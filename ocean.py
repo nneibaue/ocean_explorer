@@ -138,7 +138,7 @@ class Scan:
     if copy is None:
       self.detsums = self._make_detsums(template)
     else:
-      if not isinstance(copy, ocean.Scan):
+      if not isinstance(copy, Scan):
         raise TypeError("`copy` must be a Scan instance")
       self.detsums = copy.detsums
     self.detsums = sorted(self.detsums, key = lambda d: d.element)
