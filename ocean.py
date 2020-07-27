@@ -120,6 +120,7 @@ class Scan:
       self.path = path
 
     self.scan_number = re.search(Scan.file_template, self.name).group(1)
+    print(copy, type(copy))
 
     # Build regex template based on parameters
     template = '^detsum'
