@@ -517,10 +517,10 @@ class Profile:
         continue
       try:
         fullpath = os.path.join(DRIVE_BASE, experiment_dir, dir_or_file)
-        d = ocean.Depth(os.path.join(fullpath),
-                        elements_of_interest=elements_of_interest,
-                        orbitals=['K'],
-                        normalized=True)
+        d = Depth(os.path.join(fullpath),
+                  elements_of_interest=elements_of_interest,
+                  orbitals=['K'],
+                  normalized=True)
         depths.append(d)
         print(f"Successfully imported data for {d.depth}")
       except NameError as e:
