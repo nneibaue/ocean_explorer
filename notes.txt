@@ -1,0 +1,33 @@
+7/27/2020 
+After conversation w/ NI, we are adding more granularity to the element filter settings controller. 
+Instead of having a flat setting for all Depths, there will be an individual setting for _each_ Scan
+at _each_ Depth, resulting in a structure kind-of like the following:
+{
+  'mysetting1': {
+  '10m': {
+    'scan1': {
+      'Cu': 2,
+      'Fe': 2,
+    },
+    'scan2': {
+      'Cu: 1.6,
+      'Fe': 2.1'
+    },
+  },
+  '20m': {
+    'scan1': {
+      'Cu': 1.5,
+      'Fe': 1.5,
+    },
+    'scan2': {
+      'Cu: 1.2,
+      'Fe': 0.8'
+    },
+  }},
+  'mysetting2': {
+    ...
+  }
+}
+
+Because of this, it makes sense to move settings for each widget (so far, the only settings are for the
+element filter widget) to their own json files within a 'settings' directory. 
