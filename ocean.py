@@ -511,6 +511,7 @@ class Profile:
                orbitals=['K'],
                normalized=True):
 
+    self._elements_of_interest = elements_of_interest
     depths = []
     for dir_or_file in os.listdir(os.path.join(DRIVE_BASE, experiment_dir)):
       if dir_or_file in PROFILE_FILE_FILTER:

@@ -372,10 +372,10 @@ class PropSelector:
 class ElementFilter:
   SETTING_KEY = 'element_filter'
   '''Object that will hold an element filter selector widget using composition.'''
-  def __init__(self, elements, orientation='vertical', input_type='slider', experiment_dir=None, **layout_kwargs):
+  def __init__(self, depth, orientation='vertical', input_type='slider', experiment_dir=None, **layout_kwargs):
     assert orientation in ['vertical', 'horizontal']
     self._orientation = orientation
-    self._elements = elements
+    self._elements = depth._instance_kwargs['elements_of_interest']
     self._base_func = lambda n: lambda x: np.mean(x) + n * np.std(x)
 
 
