@@ -332,6 +332,7 @@ class Scan:
 
   def filter_by(self, element):
     # Create a new scan object that copies this scan
+    print(type(self))
     s = Scan(self.path,
              self._elements_of_interest,
              self._orbitals,
