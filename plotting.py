@@ -374,8 +374,7 @@ class ElementFilterPanel:
 
     self._element_filter_kwargs = element_filter_kwargs
 
-    # {depth_value: {scan_number: {ElementFilterSinglePane
-e instance}}
+    # {depth_value: {scan_number: {ElementFilterSinglePane instance}}
     self._element_filters = {}
 
     for depth in profile.depths:
