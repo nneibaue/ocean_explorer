@@ -470,8 +470,7 @@ class ElementFilterSinglePane:
       settings = json.load(f)
     
     # Modify setting
-    settings[ElementFilterSinglePane
-e.SETTING_KEY][key] = self.value_dict
+    settings[ElementFilterSinglePane.SETTING_KEY][key] = self.value_dict
 
     # Write settings to disk
     with open(self.settings_file, 'w') as f:
