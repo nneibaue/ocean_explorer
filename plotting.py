@@ -369,8 +369,61 @@ class PropSelector:
       box.observe(lambda b, prop=prop: handler_wrapper(prop, b), names='value')
 
 
-class ElementFilter:
-  SETTING_KEY = 'element_filter'
+class ElementFilterPanel:
+  def __init__(self, profile, experiment_dir=None, **element_filter_kwargs):
+
+    self._element_filter_kwargs = element_filter_kwargs
+
+    # {depth_value: {scan_number: {ElementFilterSinglePane
+e instance}}
+    self._element_filters = {}
+
+    for depth in profile.depths:
+      this_scan_dict = self._make_scan_dict(depth)
+      self._element_filters[depth.depth] = this_scan_dict
+
+  def _make_scan_dict(self, depth):
+    this_depth = {}
+    for scan in depth.scans:
+      this_depth[scan.scan_number] = ElementFilterSinglePane(
+          elements=scan.elements, **self._element_filter_kwargs)
+    return this_depth
+
+  def get_filter_dict(self, depth, scan_number):
+    return self._element_filters[depth][scan_number].filter_dict
+
+  def get_value_dict(self, depth, scan_number):
+    return self._element_filters[depth][scan_number].value_dict
+      
+      
+  @property
+  def widget(self):
+    depth_panes = []
+    for depth_value in self._element_filters:
+      scan_panes = []
+      this_depth = self._element_filters[depth_value]
+      for scan_number in this_depth:
+        this_element_filter = this_depth[scan_number]
+        scan_panes.append(this_element_filter.widget)
+      this_panel = iw.Tab(children=scan_panes) 
+
+      # Loop scans again to set titles
+      for i, scan_number in enumerate(this_depth):
+        this_panel.set_title(i, scan_number)
+
+      depth_panes.append(this_panel)
+
+    depth_panel = iw.Tab(children=depth_panes)
+
+    # Loop depths again to set titles
+    for i, depth_value in enumerate(self._element_filters):
+      depth_panel.set_title(i, depth_value)
+
+    return depth_panel
+    
+    
+class ElementFilterSinglePane:
+  SETTING_FILE = 'element_filter'
   '''Object that will hold an element filter selector widget using composition.'''
   def __init__(self, elements, orientation='vertical', input_type='slider', experiment_dir=None, **layout_kwargs):
     assert orientation in ['vertical', 'horizontal']
@@ -418,7 +471,8 @@ class ElementFilter:
       settings = json.load(f)
     
     # Modify setting
-    settings[ElementFilter.SETTING_KEY][key] = self.value_dict
+    settings[ElementFilterSinglePane
+e.SETTING_KEY][key] = self.value_dict
 
     # Write settings to disk
     with open(self.settings_file, 'w') as f:
@@ -483,7 +537,7 @@ class ElementFilter:
     return container(inputs, layout=self._layout)
 
 
-class ElementFilterWithBoxes(ElementFilter):
+class ElementFilterWithBoxes(ElementFilterSinglePane):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
