@@ -332,6 +332,7 @@ class Scan:
 
   def filter_by(self, element):
     # Create a new scan object that copies this scan
+    print(type(self))
     s = Scan(self.path,
              self._elements_of_interest,
              self._orbitals,
@@ -511,6 +512,7 @@ class Profile:
                orbitals=['K'],
                normalized=True):
 
+    self._elements_of_interest = elements_of_interest
     depths = []
     for dir_or_file in os.listdir(os.path.join(DRIVE_BASE, experiment_dir)):
       if dir_or_file in PROFILE_FILE_FILTER:
