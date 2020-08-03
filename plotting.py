@@ -422,7 +422,7 @@ class ElementFilterPanel:
     
     
 class ElementFilterSinglePane:
-  SETTING_FILE = 'element_filter'
+  SETTING_KEY = 'element_filter'
   '''Object that will hold an element filter selector widget using composition.'''
   def __init__(self, elements, orientation='vertical', input_type='slider', experiment_dir=None, **layout_kwargs):
     assert orientation in ['vertical', 'horizontal']
