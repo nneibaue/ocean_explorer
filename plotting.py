@@ -388,11 +388,37 @@ class ElementFilterPanel:
           elements=scan.elements, **self._element_filter_kwargs)
     return this_depth
 
-  def get_filter_dict(self, depth, scan_number):
-    return self._element_filters[depth][scan_number].filter_dict
 
-  def get_value_dict(self, depth, scan_number):
-    return self._element_filters[depth][scan_number].value_dict
+  @property
+  def filter_dict(self):
+    d = {}
+    for depth, scans in self._element_filters.items():
+      d[depth] = {}
+      for scan_num, element_filter in scans.items():
+        d[depth][scan_num] = element_filter.filter_dict
+
+    return d
+
+  @property
+  def value_dict(self):
+    d = {}
+    for depth, scans in self._element_filters.items():
+      d[depth] = {}
+      for scan_num, element_filter in scans.items():
+        d[depth][scan_num] = element_filter.value_dict
+
+    return d
+
+  @property
+  def filter_dict(self):
+    d = {}
+    for depth, scans in self._element_filters.items():
+      d[depth] = {}
+      for scan_num, element_filter in scans.items():
+        d[depth][scan_num] = element_filter.filter_dict
+
+    return d
+
       
       
   @property

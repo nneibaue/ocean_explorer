@@ -445,11 +445,11 @@ class Depth:
     return df
 
   def apply_element_filter(self, filter_dict,
-                           combine_detsums=True, inplace=True):
+                           combine_detsums=False, inplace=True):
     '''Applies element-wise filter to all Detsums.
 
     Args:
-      filter_dict: dictionary of the form {`element`: `filter_func`}, where
+      filter_dict: dictionary of the form {scan_number: {element: filter_func}}
         `filter_func` takes an array and returns a single threshold value. 
       combine_detsum: bool. Whether or not to use the data from all Detsums
         in this Depth when calculating the threshold with `filter_func`. If
@@ -460,6 +460,10 @@ class Depth:
         take some time, as it has to re-import data to re-create all Scans and
         Detsums. 
     '''
+
+    # TODO: Fix this later
+    if not combine_detsums:
+      raise NotImplementedError
     
 
     for element in filter_dict:
@@ -480,21 +484,20 @@ class Depth:
 
     data_full = depth.combined_scan.data.copy()
 
-    for d in depth.detsums:
-      get_threshold = filter_dict[d.element]
-      # Make sure filter_funcs are working properly.
-      if not isinstance(get_threshold(test_arr), float):
-        raise TypeError('Problem encountered with filter function for {d.element}. '
-                        'All filter funcs must be of the form f([array]) -> [float]')
-      if combine_detsums:
-        data_for_mask = data_full[d.element].values
-      else:
+    for scan in depth.scans:
+      filter_dict = filter_dict[scan.scan_number]
+      for d in scan.detsums:
+        get_threshold = filter_dict[d.element]
+        # Make sure filter_funcs are working properly.
+        if not isinstance(get_threshold(test_arr), float):
+          raise TypeError('Problem encountered with filter function for {d.element}. '
+                          'All filter funcs must be of the form f([array]) -> [float]')
         data_for_mask = d._data_raw
-
-      threshold = get_threshold(data_for_mask)
-      #print(f'Threshold for {d.element}: {threshold}')
-      mask = d._data_raw > threshold
-      d.add_mask(mask)
+  
+        threshold = get_threshold(data_for_mask)
+        #print(f'Threshold for {d.element}: {threshold}')
+        mask = d._data_raw > threshold
+        d.add_mask(mask)
 
     if not inplace:
       return depth
@@ -531,6 +534,15 @@ class Profile:
 
     self.depths = depths
 
+  def apply_element_filter(self, filter_dict):
+    '''Applies element-wise filter depth-by-depth and scan-by-scan.'''
+    for depth in depths:
+      depth_value = depth.depth
+      if depth_value not in filter_dict:
+        raise KeyError(f'{depth_value} not found in `filter_dict`!')
+      depth.apply_element_filter(filter_dict[depth_value])
+      
+      
   @property
   def scans(self):
     scans = []
