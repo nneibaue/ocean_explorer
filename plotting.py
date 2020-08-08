@@ -377,7 +377,7 @@ class ElementFilterPanel:
       fname = os.path.join(profile.experiment_dir, fname)
 
     self.experiment_dir = profile.experiment_dir
-    self.settings_file = fname
+    self.settings_file = os.path.join('settings', fname)
 
     # Make sure there is a settings file present with the right key for this widget
     _check_or_create_settings(self.SETTING_KEY, base_dir=self.experiment_dir)
