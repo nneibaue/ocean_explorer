@@ -483,10 +483,10 @@ class Depth:
 
     for scan in depth.scans:
       filter_dict = filter_dict[scan.scan_number]
+      for element in filter_dict:
+        if element not in d.elements:
+          print(f'{element} not present in Scan {scan}')
       for d in scan.detsums:
-        for element in filter_dict:
-          if element not in d.elements:
-            print(f'{element} not present in Scan {scan}')
         get_threshold = filter_dict[d.element]
         # Make sure filter_funcs are working properly.
         if not isinstance(get_threshold(test_arr), float):
