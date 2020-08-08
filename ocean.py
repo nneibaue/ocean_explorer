@@ -462,7 +462,7 @@ class Depth:
     '''
 
     # TODO: Fix this later
-    if not combine_detsums:
+    if combine_detsums:
       raise NotImplementedError
     
 
