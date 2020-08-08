@@ -436,7 +436,7 @@ class ElementFilterPanel:
     for depth_value in value_dict:
       this_depth = value_dict[depth_value]
       for scan_number in this_depth:
-        self._element_filters[value_dict][scan_number]._load_settings(this_depth[scan_number])
+        self._element_filters[depth_value][scan_number]._load_settings(this_depth[scan_number])
         
       
   @property
