@@ -417,11 +417,7 @@ class ElementFilterPanel:
       settings = json.load(f)
     
     # Modify setting
-<<<<<<< HEAD
-    settings[ElementFilterSinglePane.SETTING_KEY][key] = self.value_dict
-=======
     settings[key] = self.value_dict
->>>>>>> live_debug
 
     # Write settings to disk
     with open(self.settings_file, 'w') as f:
