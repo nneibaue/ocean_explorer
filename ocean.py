@@ -482,8 +482,8 @@ class Depth:
     print(filter_dict)
 
     for scan in depth.scans:
-      filter_dict = filter_dict[scan.scan_number]
-      for element in filter_dict:
+      filter_dict_inner = filter_dict[scan.scan_number]
+      for element in filter_dict_inner:
         if element not in scan.elements:
           print(f'{element} not present in Scan {scan}')
       for d in scan.detsums:
