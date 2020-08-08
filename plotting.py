@@ -160,7 +160,7 @@ def encode_matplotlib_fig(fig):
   plt.close(fig)
   return f"<img src='data:image/png;base64,{data}'/>"
 
-def ribbon_plot(depths,
+def ribbon_plot(profile,
                 element_filter,
                 filter_by='Cu',
                 combine_scans=True,
@@ -172,7 +172,7 @@ def ribbon_plot(depths,
   '''Shows fractional concentration of element among different groups.
 
   Args:
-    filter_by: string. Element under investigation
+    profile: ocean.Profile object
     element_filter: dict specifying how elements should be filtered. For more 
       info, see `Depth.apply_element_filter`. In Colab, this can be done by
       opening a new cell and running `Depth.apply_element_filter?`.
@@ -258,8 +258,8 @@ def ribbon_plot(depths,
 
   i=0
   yticklabels = []
-  for depth in depths:
-    depth.apply_element_filter(element_filter, combine_detsums=combine_detsums)
+  profile.apply_element_filter(element_filter)
+  for depth in profile.depths:
     if combine_scans:
       scans = [depth.combined_scan]
       yticklabels.append(depth.depth)
