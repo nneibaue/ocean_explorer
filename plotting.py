@@ -583,7 +583,7 @@ class SettingsController:
     self.settings_file = w.settings_file
     self._setting_key = w.SETTING_KEY
 
-    _check_or_create_settings(experiment_dir, setting_key=w.SETTING_KEY)
+    _check_or_create_settings(self._setting_key, self.experiment_dir)
     
 
     self._layout = iw.Layout(**layout_kwargs)
