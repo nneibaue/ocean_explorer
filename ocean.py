@@ -332,7 +332,6 @@ class Scan:
 
   def filter_by(self, element):
     # Create a new scan object that copies this scan
-    print(type(self))
     s = Scan(self.path,
              self._elements_of_interest,
              self._orbitals,
@@ -479,7 +478,6 @@ class Depth:
       depth = Depth.fresh_copy(self)
 
     data_full = depth.combined_scan.data.copy()
-    print(filter_dict)
 
     for scan in depth.scans:
       filter_dict_inner = filter_dict[scan.scan_number]
@@ -537,7 +535,6 @@ class Profile:
 
   def apply_element_filter(self, filter_dict):
     '''Applies element-wise filter depth-by-depth and scan-by-scan.'''
-    print(self.depths)
     for depth in self.depths:
       depth_value = depth.depth
       if depth_value not in filter_dict:
