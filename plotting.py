@@ -362,9 +362,10 @@ class PropSelector:
 
 class ElementFilterPanel:
   SETTING_KEY = 'element_filter_panel'
-  def __init__(self, profile, **element_filter_kwargs):
+  def __init__(self, profile, layout_kwargs={}, **element_filter_kwargs):
 
     self._element_filter_kwargs = element_filter_kwargs
+    self._layout_kwargs = layout_kwargs
 
     # {depth_value: {scan_number: {ElementFilterSinglePane instance}}
     self._element_filters = {}
@@ -457,11 +458,13 @@ class ElementFilterPanel:
 
       depth_panes.append(this_panel)
 
-    depth_panel = iw.Tab(children=depth_panes)
+    depth_panel = iw.Tab(children=depth_panes,
+                         layout=iw.Layout(**self._layout_kwargs))
 
     # Loop depths again to set titles
     for i, depth_value in enumerate(self._element_filters):
       depth_panel.set_title(i, depth_value)
+      
 
     return depth_panel
 
