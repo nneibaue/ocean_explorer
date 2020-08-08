@@ -537,6 +537,7 @@ class Profile:
 
   def apply_element_filter(self, filter_dict):
     '''Applies element-wise filter depth-by-depth and scan-by-scan.'''
+    print(self.depths)
     for depth in self.depths:
       depth_value = depth.depth
       if depth_value not in filter_dict:
