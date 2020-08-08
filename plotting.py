@@ -14,32 +14,22 @@ PATTERNS = [None, '\\\\', '..', 'xx', '**', '++', 'oo', '00', '--', '\\\\\\', '.
 SMALLTEXTBOX = iw.Layout(width='50px', height='25px')
 PROP_FILE_AVAILABLE = 'available_props.json'
 PROP_FILE_MAP = 'property_map.json'
-SETTINGS_FILE = 'settings.json'
 
 
-def _check_or_create_settings(dir_name=None, setting_key=None):
-  '''Checks to see if a settings file exists or create a new one'''
-  fname = SETTINGS_FILE
-  if dir_name is not None:
-    fname = os.path.join(dir_name, fname)
-  
-  if not os.path.exists(fname):
-    if setting_key is not None:
-      settings = {setting_key: {}}
-    else:
-      settings = {}
+def _check_or_create_settings(setting_key, base_dir=None):
+
+  if base_dir is not None:
+    settings_dir = os.path.join(base_dir, 'settings')
   else:
-    if setting_key is None:
-      return
-    with open(fname, 'r') as f:
-      settings = json.load(f)
-    if setting_key in settings:
-      return
-    settings.update({setting_key: {}})
-  with open(fname, 'w') as f:
-    json.dump(settings, f, indent=2)
+    settings_dir = 'settings'
 
-  
+  if not os.path.isdir(settings_dir):
+    os.makedirs(settings_dir) 
+
+  fname = os.path.join(settings_dir, f'{setting_key}.json')
+  if not os.path.exists(fname):
+    with open(fname, 'w') as f:
+      json.dump({}, f, indent=2)
 
 
 def _prop_list_exists(dir_name=None):
@@ -370,7 +360,8 @@ class PropSelector:
 
 
 class ElementFilterPanel:
-  def __init__(self, profile, experiment_dir=None, **element_filter_kwargs):
+  SETTING_KEY = 'element_filter_panel'
+  def __init__(self, profile, **element_filter_kwargs):
 
     self._element_filter_kwargs = element_filter_kwargs
 
@@ -381,6 +372,13 @@ class ElementFilterPanel:
       this_scan_dict = self._make_scan_dict(depth)
       self._element_filters[depth.depth] = this_scan_dict
 
+    fname = f'{self.SETTING_KEY}.json'
+    self.experiment_dir = profile.experiment_dir
+    self.settings_file = os.path.join(self.experiment_dir, 'settings', fname)
+
+    # Make sure there is a settings file present with the right key for this widget
+    _check_or_create_settings(self.SETTING_KEY, base_dir=self.experiment_dir)
+
   def _make_scan_dict(self, depth):
     this_depth = {}
     for scan in depth.scans:
@@ -388,12 +386,62 @@ class ElementFilterPanel:
           elements=scan.elements, **self._element_filter_kwargs)
     return this_depth
 
-  def get_filter_dict(self, depth, scan_number):
-    return self._element_filters[depth][scan_number].filter_dict
 
-  def get_value_dict(self, depth, scan_number):
-    return self._element_filters[depth][scan_number].value_dict
+  @property
+  def filter_dict(self):
+    d = {}
+    for depth, scans in self._element_filters.items():
+      d[depth] = {}
+      for scan_num, element_filter in scans.items():
+        d[depth][scan_num] = element_filter.filter_dict
+
+    return d
+
+  @property
+  def value_dict(self):
+    d = {}
+    for depth, scans in self._element_filters.items():
+      d[depth] = {}
+      for scan_num, element_filter in scans.items():
+        d[depth][scan_num] = element_filter.value_dict
+
+    return d
       
+  def save_settings(self, key='latest'):
+    '''Saves the current element filter as `key` in "settings.json"'''
+    if not key:
+      return
+
+    # Read settings into memory
+    with open(self.settings_file, 'r') as f:
+      settings = json.load(f)
+    
+    # Modify setting
+<<<<<<< HEAD
+    settings[ElementFilterSinglePane.SETTING_KEY][key] = self.value_dict
+=======
+    settings[key] = self.value_dict
+>>>>>>> live_debug
+
+    # Write settings to disk
+    with open(self.settings_file, 'w') as f:
+      json.dump(settings, f, indent=2)
+
+
+  def load_settings(self, key='latest'):
+    '''Loads settings from json file.'''
+    _check_or_create_settings(self.SETTING_KEY)
+    
+    # Read settings into memory
+    with open(self.settings_file, 'r') as f:
+      settings = json.load(f)
+
+    value_dict = settings[key]
+    for depth_value in value_dict:
+      this_depth = value_dict[depth_value]
+      for scan_number in this_depth:
+        self._element_filters[value_dict][scan_number]._load_settings(this_depth[scan_number])
+        
       
   @property
   def widget(self):
@@ -419,12 +467,12 @@ class ElementFilterPanel:
       depth_panel.set_title(i, depth_value)
 
     return depth_panel
+
     
     
 class ElementFilterSinglePane:
-  SETTING_KEY = 'element_filter'
   '''Object that will hold an element filter selector widget using composition.'''
-  def __init__(self, elements, orientation='vertical', input_type='slider', experiment_dir=None, **layout_kwargs):
+  def __init__(self, elements, orientation='vertical', input_type='slider', **layout_kwargs):
     assert orientation in ['vertical', 'horizontal']
     self._orientation = orientation
     self._elements = elements
@@ -446,52 +494,23 @@ class ElementFilterSinglePane:
     self._input_widgets = [element_input(e) for e in self._elements]
     self._layout = iw.Layout(**layout_kwargs)
 
-    fname = SETTINGS_FILE
-    if experiment_dir is not None:
-      fname = os.path.join(experiment_dir, fname)
-
-    self.experiment_dir = experiment_dir
-    self.settings_file = fname
-
-    # Make sure there is a settings file present with the right key for this widget
-    _check_or_create_settings(self.experiment_dir, setting_key=self.SETTING_KEY)
-
 
   def get_input_widget(self, e):
     return self._input_widgets[self._elements.index(e)]
 
-  def save_settings(self, key='latest'):
-    '''Saves the current element filter as `key` in "settings.json"'''
-    if not key:
-      return
+  def _load_settings(self, value_dict):
+    '''Sets internal widget state.
 
-    # Read settings into memory
-    with open(self.settings_file, 'r') as f:
-      settings = json.load(f)
-    
-    # Modify setting
-    settings[ElementFilterSinglePane.SETTING_KEY][key] = self.value_dict
+    Args:
+      value_dict: dictionary of the form {element1: value1, element2: value2, ...} 
 
-    # Write settings to disk
-    with open(self.settings_file, 'w') as f:
-      json.dump(settings, f, indent=2)
-
-  def load_settings(self, key='latest'):
-    '''Loads settings from json file.'''
-    _check_or_create_settings()
-    
-    # Read settings into memory
-    with open(self.settings_file, 'r') as f:
-      settings = json.load(f)
-
-    value_dict = settings[self.SETTING_KEY][key]
-    for e in self._elements:
+    '''
+    for e in value_dict:
       if self._input_type == 'text':
         val = str(value_dict[e])
       else:
         val = value_dict[e]
       self.get_input_widget(e).value = val
-
 
   @property
   def filter_dict(self):
