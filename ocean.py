@@ -466,10 +466,6 @@ class Depth:
       raise NotImplementedError
     
 
-    for element in filter_dict:
-      if element not in self.elements:
-        print(f'{element} not present in this Depth object')
-
     # for testing the functions in filter_dict
     test_arr = np.linspace(0, 1, 100)
 
@@ -483,10 +479,14 @@ class Depth:
       depth = Depth.fresh_copy(self)
 
     data_full = depth.combined_scan.data.copy()
+    print(filter_dict)
 
     for scan in depth.scans:
       filter_dict = filter_dict[scan.scan_number]
       for d in scan.detsums:
+        for element in filter_dict:
+          if element not in d.elements:
+            print(f'{element} not present in Scan {scan}')
         get_threshold = filter_dict[d.element]
         # Make sure filter_funcs are working properly.
         if not isinstance(get_threshold(test_arr), float):
