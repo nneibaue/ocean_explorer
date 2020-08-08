@@ -373,12 +373,8 @@ class ElementFilterPanel:
       self._element_filters[depth.depth] = this_scan_dict
 
     fname = f'{self.SETTING_KEY}.json'
-    if profile.experiment_dir is not None:
-      fname = os.path.join(profile.experiment_dir, fname)
-
     self.experiment_dir = profile.experiment_dir
     self.settings_file = os.path.join(self.experiment_dir, 'settings', fname)
-    print(self.settings_file)
 
     # Make sure there is a settings file present with the right key for this widget
     _check_or_create_settings(self.SETTING_KEY, base_dir=self.experiment_dir)
