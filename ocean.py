@@ -484,7 +484,7 @@ class Depth:
     for scan in depth.scans:
       filter_dict = filter_dict[scan.scan_number]
       for element in filter_dict:
-        if element not in d.elements:
+        if element not in scan.elements:
           print(f'{element} not present in Scan {scan}')
       for d in scan.detsums:
         get_threshold = filter_dict[d.element]
