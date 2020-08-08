@@ -533,7 +533,7 @@ class Profile:
         continue
 
     self.depths = depths
-    self.experiment_dir = experiment_dir
+    self.experiment_dir = os.path.join(DRIVE_BASE, experiment_dir)
 
   def apply_element_filter(self, filter_dict):
     '''Applies element-wise filter depth-by-depth and scan-by-scan.'''
