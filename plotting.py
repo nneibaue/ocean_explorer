@@ -194,7 +194,9 @@ def ribbon_plot(profile,
   fig, ax = plt.subplots(figsize=(16, 4))
 
   # Sort depth objects by depth
+  depths = profile.depths
   depths = sorted(depths, key=lambda d: int(d.depth[:-1]), reverse=True)
+  profile.apply_element_filter(element_filter)
 
   if not _prop_list_exists(experiment_dir):
     _create_prop_list(dir_name=experiment_dir, overwrite=True)
@@ -258,8 +260,7 @@ def ribbon_plot(profile,
 
   i=0
   yticklabels = []
-  profile.apply_element_filter(element_filter)
-  for depth in profile.depths:
+  for depth in depths:
     if combine_scans:
       scans = [depth.combined_scan]
       yticklabels.append(depth.depth)
