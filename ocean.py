@@ -487,7 +487,7 @@ class Depth:
         if element not in scan.elements:
           print(f'{element} not present in Scan {scan}')
       for d in scan.detsums:
-        get_threshold = filter_dict[d.element]
+        get_threshold = filter_dict_inner[d.element]
         # Make sure filter_funcs are working properly.
         if not isinstance(get_threshold(test_arr), float):
           raise TypeError('Problem encountered with filter function for {d.element}. '
