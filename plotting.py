@@ -23,6 +23,9 @@ def _check_or_create_settings(setting_key, base_dir=None):
   else:
     settings_dir = 'settings'
 
+  if not os.path.isdir(settings_dir):
+    os.makedirs(settings_dir) 
+
   fname = os.path.join(settings_dir, f'{setting_key}.json')
   if not os.path.exists(fname):
     with open(fname, 'w') as f:
@@ -422,6 +425,7 @@ class ElementFilterPanel:
     # Write settings to disk
     with open(self.settings_file, 'w') as f:
       json.dump(settings, f, indent=2)
+
 
   def load_settings(self, key='latest'):
     '''Loads settings from json file.'''
