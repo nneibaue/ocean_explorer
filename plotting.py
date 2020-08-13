@@ -160,7 +160,7 @@ def encode_matplotlib_fig(fig):
   plt.close(fig)
   return f"<img src='data:image/png;base64,{data}'/>"
 
-def ribbon_plot(depths,
+def ribbon_plot(profile,
                 element_filter,
                 filter_by='Cu',
                 combine_scans=True,
@@ -172,7 +172,7 @@ def ribbon_plot(depths,
   '''Shows fractional concentration of element among different groups.
 
   Args:
-    filter_by: string. Element under investigation
+    profile: ocean.Profile object
     element_filter: dict specifying how elements should be filtered. For more 
       info, see `Depth.apply_element_filter`. In Colab, this can be done by
       opening a new cell and running `Depth.apply_element_filter?`.
@@ -194,7 +194,9 @@ def ribbon_plot(depths,
   fig, ax = plt.subplots(figsize=(16, 4))
 
   # Sort depth objects by depth
+  depths = profile.depths
   depths = sorted(depths, key=lambda d: int(d.depth[:-1]), reverse=True)
+  profile.apply_element_filter(element_filter)
 
   if not _prop_list_exists(experiment_dir):
     _create_prop_list(dir_name=experiment_dir, overwrite=True)
@@ -259,7 +261,6 @@ def ribbon_plot(depths,
   i=0
   yticklabels = []
   for depth in depths:
-    depth.apply_element_filter(element_filter, combine_detsums=combine_detsums)
     if combine_scans:
       scans = [depth.combined_scan]
       yticklabels.append(depth.depth)
@@ -361,9 +362,10 @@ class PropSelector:
 
 class ElementFilterPanel:
   SETTING_KEY = 'element_filter_panel'
-  def __init__(self, profile, **element_filter_kwargs):
+  def __init__(self, profile, layout_kwargs={}, **element_filter_kwargs):
 
     self._element_filter_kwargs = element_filter_kwargs
+    self._layout_kwargs = layout_kwargs
 
     # {depth_value: {scan_number: {ElementFilterSinglePane instance}}
     self._element_filters = {}
@@ -436,7 +438,7 @@ class ElementFilterPanel:
     for depth_value in value_dict:
       this_depth = value_dict[depth_value]
       for scan_number in this_depth:
-        self._element_filters[value_dict][scan_number]._load_settings(this_depth[scan_number])
+        self._element_filters[depth_value][scan_number]._load_settings(this_depth[scan_number])
         
       
   @property
@@ -456,11 +458,13 @@ class ElementFilterPanel:
 
       depth_panes.append(this_panel)
 
-    depth_panel = iw.Tab(children=depth_panes)
+    depth_panel = iw.Tab(children=depth_panes,
+                         layout=iw.Layout(**self._layout_kwargs))
 
     # Loop depths again to set titles
     for i, depth_value in enumerate(self._element_filters):
       depth_panel.set_title(i, depth_value)
+      
 
     return depth_panel
 
@@ -583,7 +587,7 @@ class SettingsController:
     self.settings_file = w.settings_file
     self._setting_key = w.SETTING_KEY
 
-    _check_or_create_settings(experiment_dir, setting_key=w.SETTING_KEY)
+    _check_or_create_settings(self._setting_key, self.experiment_dir)
     
 
     self._layout = iw.Layout(**layout_kwargs)
@@ -627,7 +631,7 @@ class SettingsController:
   def refresh_settings(self):
     with open(self.settings_file, 'r') as f:
       settings = json.load(f)
-    options = settings[self._setting_key].keys()
+    options = settings.keys()
     self.load_widget.options = options
 
   @property

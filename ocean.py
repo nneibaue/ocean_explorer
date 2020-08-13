@@ -102,7 +102,7 @@ class Detsum:
 
 
 class Scan:
-  file_template = '^scan2D_([0-9]{4,7})$' # Assume scan number < 1E6
+  file_template = '^scan2D_([0-9]{1,7})$' # Assume scan number < 1E6
 
   def __init__(self, path=None,
                elements_of_interest=None,
@@ -138,8 +138,6 @@ class Scan:
     if copy is None:
       self.detsums = self._make_detsums(template)
     else:
-      if not isinstance(copy, Scan):
-        raise TypeError("`copy` must be a Scan instance")
       self.detsums = copy.detsums
     self.detsums = sorted(self.detsums, key = lambda d: d.element)
     
@@ -332,7 +330,6 @@ class Scan:
 
   def filter_by(self, element):
     # Create a new scan object that copies this scan
-    print(type(self))
     s = Scan(self.path,
              self._elements_of_interest,
              self._orbitals,
@@ -462,13 +459,9 @@ class Depth:
     '''
 
     # TODO: Fix this later
-    if not combine_detsums:
+    if combine_detsums:
       raise NotImplementedError
     
-
-    for element in filter_dict:
-      if element not in self.elements:
-        print(f'{element} not present in this Depth object')
 
     # for testing the functions in filter_dict
     test_arr = np.linspace(0, 1, 100)
@@ -485,9 +478,12 @@ class Depth:
     data_full = depth.combined_scan.data.copy()
 
     for scan in depth.scans:
-      filter_dict = filter_dict[scan.scan_number]
+      filter_dict_inner = filter_dict[scan.scan_number]
+      for element in filter_dict_inner:
+        if element not in scan.elements:
+          print(f'{element} not present in Scan {scan}')
       for d in scan.detsums:
-        get_threshold = filter_dict[d.element]
+        get_threshold = filter_dict_inner[d.element]
         # Make sure filter_funcs are working properly.
         if not isinstance(get_threshold(test_arr), float):
           raise TypeError('Problem encountered with filter function for {d.element}. '
@@ -517,11 +513,11 @@ class Profile:
 
     self._elements_of_interest = elements_of_interest
     depths = []
-    for dir_or_file in os.listdir(os.path.join(DRIVE_BASE, experiment_dir)):
+    for dir_or_file in os.listdir(experiment_dir):
       if dir_or_file in PROFILE_FILE_FILTER:
         continue
       try:
-        fullpath = os.path.join(DRIVE_BASE, experiment_dir, dir_or_file)
+        fullpath = os.path.join(experiment_dir, dir_or_file)
         d = Depth(os.path.join(fullpath),
                   elements_of_interest=elements_of_interest,
                   orbitals=['K'],
@@ -537,7 +533,7 @@ class Profile:
 
   def apply_element_filter(self, filter_dict):
     '''Applies element-wise filter depth-by-depth and scan-by-scan.'''
-    for depth in depths:
+    for depth in self.depths:
       depth_value = depth.depth
       if depth_value not in filter_dict:
         raise KeyError(f'{depth_value} not found in `filter_dict`!')
