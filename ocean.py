@@ -102,7 +102,7 @@ class Detsum:
 
 
 class Scan:
-  file_template = '^scan2D_([0-9]{4,7})$' # Assume scan number < 1E6
+  file_template = '^scan2D_([0-9]{1,7})$' # Assume scan number < 1E6
 
   def __init__(self, path=None,
                elements_of_interest=None,
@@ -513,11 +513,11 @@ class Profile:
 
     self._elements_of_interest = elements_of_interest
     depths = []
-    for dir_or_file in os.listdir(os.path.join(DRIVE_BASE, experiment_dir)):
+    for dir_or_file in os.listdir(experiment_dir):
       if dir_or_file in PROFILE_FILE_FILTER:
         continue
       try:
-        fullpath = os.path.join(DRIVE_BASE, experiment_dir, dir_or_file)
+        fullpath = os.path.join(experiment_dir, dir_or_file)
         d = Depth(os.path.join(fullpath),
                   elements_of_interest=elements_of_interest,
                   orbitals=['K'],
