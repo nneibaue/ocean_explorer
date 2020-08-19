@@ -55,7 +55,7 @@ class Detsum:
     return data
 
   def add_mask(self, mask):
-    '''Removes points that aren't in the mask'''
+    '''Adds a new mask'''
     if mask.shape != self.data.shape:
       raise ValueError(f'Trying to add mask of shape {mask.shape} to Detsum of shape {self.data.shape}')
     self._masks.append(mask)
@@ -124,7 +124,7 @@ class Scan:
     # Build regex template based on parameters
     template = '^detsum'
     if elements_of_interest is None:
-      template += '[a-zA-Z]{1,2}'
+      template += '_[a-zA-Z]{1,2}'
     else:
       template += f'_({"|".join(elements_of_interest)})'
     template += f'_({"|".join(orbitals)})'
@@ -315,6 +315,8 @@ class Scan:
       #print(self._template, f, re.fullmatch(self._template, f))
       if re.fullmatch(self._template, f):
         detsums.append(Detsum(fullpath))
+      else:
+        print(f'{f} does not match {self._template}!')
     for d in detsums:
       self.__dict__[f'{d.element}_{d.orbital}'] = d
     return detsums
