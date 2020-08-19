@@ -6,23 +6,6 @@ import pandas as pd
 
 ELEMENTS = ['A', 'B', 'C']
 
-@pytest.fixture
-def profile():
-  p = ocean.Profile('test_profile',
-                    elements_of_interest=ELEMENTS)
-  return p
-
-@pytest.fixture
-def depth_multiple_scans():
-  d = ocean.Depth('test_profile/1m')
-  return d
-
-@pytest.fixture
-def depth_single_scan():
-  d = ocean.Depth('test_profile/5m')
-  return d
-
-
 class TestDetsum:
   fname = 'test_profile/1m/scan2D_1/detsum_A_K_norm.txt'
 
