@@ -108,6 +108,8 @@ class Scan:
                orbitals=['K'],
                normalized=True,
                copy=None):
+
+    self.isNoisy = False
     self.depth = path.split('/')[-2]
     self.name = path.split('/')[-1]
     self._elements_of_interest = elements_of_interest
@@ -418,17 +420,15 @@ class Depth:
     #self.depth = re.search(ocean_utils.FileTemplates.DEPTH, path.split('/')[-1]).group(1)
     self.depth = path.split('/')[-1]
 
-    # Load the scans, skipping noisy ones
+    # Load the scans, flagging noisy ones
     for f in os.listdir(path):
-      if noisy_scans is not None and f in noisy_scans:
-        continue
       fullpath = os.path.join(path, f)
       try:
-        self.scans.append(
-            Scan(fullpath,
-                 elements_of_interest=elements_of_interest,
-                 orbitals=orbitals,
-                 normalized=normalized))
+        this_scan = Scan(fullpath, elements_of_interest=elements_of_interest,
+                         orbitals=orbitals, normalized=normalized)
+        if noisy_scans is not None and f in noisy_scans:
+          this_scan.isNoisy = True
+        self.scans.append(this_scan)
       except NameError as e:
         print(e)
         pass

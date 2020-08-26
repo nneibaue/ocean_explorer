@@ -4,18 +4,22 @@ import numpy as np
 import os
 from shutil import rmtree
 import json
+import ocean
 
 def test_set_noisy_scan_flag():
-  ocean_utils.set_noisy_scan_flag('test_scan_true', True, base_dir='test_profile')
-  ocean_utils.set_noisy_scan_flag('test_scan_false', False, base_dir='test_profile')
+  scan1 = ocean.Scan('test_profile/1m/scan2D_1')
+  scan2 = ocean.Scan('test_profile/1m/scan2D_2')
+
+  ocean_utils.set_noisy_scan_flag(scan1, True, base_dir='test_profile')
+  ocean_utils.set_noisy_scan_flag(scan2, False, base_dir='test_profile')
 
   fname = os.path.join('test_profile', 'settings', 'noisy_scans.json')
   assert os.path.exists(fname)
   with open(fname, 'r') as f:
     settings = json.load(f)
 
-  assert settings['test_scan_true']
-  assert not settings['test_scan_false']
+  assert settings['scan2D_1']
+  assert not settings['scan2D_2']
 
   rmtree('test_profile/settings')
 

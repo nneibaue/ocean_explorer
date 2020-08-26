@@ -40,19 +40,11 @@ def create_noisy_scans_file(experiment_dir):
 
   with open(fname, 'w') as f:
     json.dump(noisy_scan_dict, f)
-    
-
-
   
 
-  
-  
-
-  
-
-
-def set_noisy_scan_flag(scan_name, is_noisy, base_dir=None):
-  '''Flags a scan as noisy or not.
+def set_noisy_scan_flag(scan, isNoisy, base_dir=None):
+  '''Flags a scan as noisy or not and updates the value in
+     settings/noisy_scans.json.
 
   Args:
     scan_name: str name of scan. This should match the directory name containing
@@ -60,15 +52,15 @@ def set_noisy_scan_flag(scan_name, is_noisy, base_dir=None):
     is_noisy: bool whether to set `scan_name` as noisy
     base_dir: str directory containing 'settings' subdir
   '''
-  assert isinstance(is_noisy, bool)
-  assert isinstance(scan_name, str)
-
+  assert isinstance(isNoisy, bool)
+  scan.isNoisy = isNoisy
+  
   plotting._check_or_create_settings('noisy_scans', base_dir=base_dir)
   fname = os.path.join(base_dir or '',  'settings', NOISY_SCANS_FILE)
 
   with open(fname, 'r') as f:
     settings = json.load(f)
-  settings[scan_name] = is_noisy
+  settings[scan.name] = isNoisy
   
   with open(fname, 'w') as f:
     json.dump(settings, f)
