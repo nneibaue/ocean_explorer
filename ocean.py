@@ -14,7 +14,6 @@ DRIVE_BASE = '/content/gdrive/My Drive'
 PROFILE_FILE_FILTER = ['__profile__', 'available_props.json', 'property_map.json', 'settings.json']
 
 class Detsum:
-  file_template = '^detsum_([a-zA-Z]{1,2})_([A-Z])(_norm)?.txt$'
   def __init__(self, path):
     self.filename = path.split('/')[-1]
     self.scan_name = path.split('/')[-2]
@@ -23,10 +22,10 @@ class Detsum:
       self.normalized = True
     else:
       self.normalized = False
-    if not re.fullmatch(Detsum.file_template, self.filename):
+    if not re.fullmatch(ocean_utils.FileTemplates.DETSUM, self.filename):
       raise NameError(f'{self.filename} is not a valid name for Detsum')
-    self.element = re.search(Detsum.file_template, self.filename).group(1)
-    self.orbital = re.search(Detsum.file_template, self.filename).group(2)
+    self.element = re.search(ocean_utils.FileTemplates.DETSUM, self.filename).group(1)
+    self.orbital = re.search(ocean_utils.FileTemplates.DETSUM, self.filename).group(2)
 
     self._data_raw = np.array(np.genfromtxt(path))
     self.shape = self._data_raw.shape
@@ -104,8 +103,6 @@ class Detsum:
 
 
 class Scan:
-  file_template = '^scan2D_([0-9]{1,7})$' # Assume scan number < 1E6
-
   def __init__(self, path=None,
                elements_of_interest=None,
                orbitals=['K'],
@@ -116,12 +113,12 @@ class Scan:
     self._elements_of_interest = elements_of_interest
     self._orbitals = orbitals
     self._normalized = normalized
-    if not re.fullmatch(Scan.file_template, self.name):
+    if not re.fullmatch(ocean_utils.FileTemplates.SCAN, self.name):
       raise NameError(f'{path} is not a valid name for Scan directory')
     else:
       self.path = path
 
-    self.scan_number = re.search(Scan.file_template, self.name).group(1)
+    self.scan_number = re.search(ocean_utils.FileTemplates.SCAN, self.name).group(1)
 
     # Build regex template based on parameters
     template = '^detsum'
@@ -402,13 +399,12 @@ class CombinedScan(Scan):
     return f'CombinedScan\n===================\n{scans})'
            
 class Depth:
-  file_template = '^([0-9])+m$'
-
   def __init__(self, path,
                elements_of_interest=None,
                orbitals=['K'],
                normalized=True,
                noisy_scans=None):
+    print('noisy_scans', noisy_scans)
     self._instance_kwargs = {
         'path': path,
         'elements_of_interest': elements_of_interest,
@@ -417,9 +413,9 @@ class Depth:
     }
     self.scans = []
     self.name = path.split('/')[-1]
-    if not re.fullmatch(Depth.file_template, self.name):
+    if not re.fullmatch(ocean_utils.FileTemplates.DEPTH, self.name):
       raise NameError(f'{self.name} is not a valid name for a Depth!')
-    #self.depth = re.search(Depth.file_template, path.split('/')[-1]).group(1)
+    #self.depth = re.search(ocean_utils.FileTemplates.DEPTH, path.split('/')[-1]).group(1)
     self.depth = path.split('/')[-1]
 
     # Load the scans, skipping noisy ones
@@ -563,6 +559,7 @@ class Profile:
     for scan in scan_dict:
       if scan_dict[scan]:
         noisy_scans.append(scan)
+    self.noisy_scans = noisy_scans
 
     # Load depths
     for dir_or_file in os.listdir(experiment_dir):
