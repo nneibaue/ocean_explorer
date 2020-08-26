@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from functools import reduce
 from plotting import encode_matplotlib_fig, _check_or_create_settings
 import ocean_utils
+import json
 
 DRIVE_BASE = '/content/gdrive/My Drive'
 PROFILE_FILE_FILTER = ['__profile__', 'available_props.json', 'property_map.json', 'settings.json']
