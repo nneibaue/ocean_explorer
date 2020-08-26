@@ -55,7 +55,7 @@ class Detsum:
     return data
 
   def add_mask(self, mask):
-    '''Removes points that aren't in the mask'''
+    '''Adds a new mask'''
     if mask.shape != self.data.shape:
       raise ValueError(f'Trying to add mask of shape {mask.shape} to Detsum of shape {self.data.shape}')
     self._masks.append(mask)
@@ -124,7 +124,7 @@ class Scan:
     # Build regex template based on parameters
     template = '^detsum'
     if elements_of_interest is None:
-      template += '[a-zA-Z]{1,2}'
+      template += '_[a-zA-Z]{1,2}'
     else:
       template += f'_({"|".join(elements_of_interest)})'
     template += f'_({"|".join(orbitals)})'
@@ -155,9 +155,31 @@ class Scan:
         groups[i, j] = group_name
     return groups
 
-  def get_unique_groups(self, elements_to_sum=['Cu'], sort_by='counts'):
-    if sort_by not in (['num_pixels'] + [f'{element}_counts' for element in elements_to_sum]):
-      raise ValueError("`sort_by` must be 'pixels' or '{element}_counts'")
+  def get_unique_groups(self, elements_to_sum, sort_by):
+    '''Returns a DataFrame with counts and sums for each unique element group.
+    
+    Args:
+      elements_to_sum: list of elements to sum over for each group. For example, 
+        if this is ['Cu', 'Br'], then the resulting DataFrame will have a colum
+        with Cu counts for each group and Br counts for each group. 
+      sort_by: either "num_pixels" or <element>_counts, where <element> is an
+        element present in `elements_to_sum`.
+    Returns: pandas DataFrame with unique element groups as the index. There is
+      one column per element in `elements_to_sum`, and the final column is 
+      either <element>_counts or num_pixels, depending on the value passed
+      to `sort_by`. The rows are sorted by the final column.
+      '''
+    
+    if 'counts' in sort_by:
+      match = re.match('^([a-zA-Z]{1,2})_counts$', sort_by)
+      if match and match.group(1) not in elements_to_sum:
+        raise ValueError(f'{sort_by} passed to `sort_by`, but {match.group(1)}'
+                          ' not found in `elements_to_sum`!')
+      elif not match:
+        raise ValueError('`sort_by` must be "num_pixels" or "{element}_counts"!')
+    elif sort_by != 'num_pixels':
+        raise ValueError('`sort_by` must be "num_pixels" or "{element}_counts"!')
+
     data = self.data
     if np.all(pd.isnull(data).values):
       return pd.DataFrame()
@@ -416,6 +438,13 @@ class Depth:
   # Returns a fresh copy of the Detsum from the source data
   def fresh_copy(self):
     return Depth(**self._instance_kwargs)
+
+  def get_scan(self, scan_number):
+    for s in self.scans:
+      if s.scan_number == scan_number:
+        return s
+    
+    raise ValueError(f'No scan found with scan number {scan_number}')
 
   @property
   def detsums(self):

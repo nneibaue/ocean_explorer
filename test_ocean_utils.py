@@ -27,7 +27,7 @@ def test_set_noisy_scan_flag():
                            ('c|a|b|d', True),
                            ('c|a|b|f|g', False),
                            (np.nan, False)]) # Test NaN vals
-def test_ocean_utils_exclusive(group, expected):
+def test_check_groups_exclusive(group, expected):
  element_list = ['a', 'b', 'c', 'd']
  assert ocean_utils.check_groups(group, element_list, exclusive=True) == expected
 
@@ -40,6 +40,6 @@ def test_ocean_utils_exclusive(group, expected):
                            ('c|a|b|d', True),
                            ('c|a|b|f|g', True),
                            (np.nan, False)]) # Test NaN vals
-def test_ocean_utils_not_exclusive(group, expected):
+def test_check_groups_not_exclusive(group, expected):
  element_list = ['a', 'b']
  assert ocean_utils.check_groups(group, element_list, exclusive=False) == expected
