@@ -383,7 +383,8 @@ class Depth:
   def __init__(self, path,
                elements_of_interest=None,
                orbitals=['K'],
-               normalized=True):
+               normalized=True,
+               noisy_scans=None):
     self._instance_kwargs = {
         'path': path,
         'elements_of_interest': elements_of_interest,
@@ -396,7 +397,11 @@ class Depth:
       raise NameError(f'{self.name} is not a valid name for a Depth!')
     #self.depth = re.search(Depth.file_template, path.split('/')[-1]).group(1)
     self.depth = path.split('/')[-1]
+
+    # Load the scans, skipping noisy ones
     for f in os.listdir(path):
+      if noisy_scans is not None and f in noisy_scans:
+        continue
       fullpath = os.path.join(path, f)
       try:
         self.scans.append(
