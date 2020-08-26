@@ -10,7 +10,7 @@ import re
 NOISY_SCANS_FILE = 'noisy_scans.json'
 
 class FileTemplates:
-  PROFILE = '^.*$'
+  PROFILE = '^.*_profile$'
   DEPTH = '^([0-9])+m$'
   SCAN = '^scan2D_([0-9]{1,7})$' # Assume scan number < 1E6
   DETSUM = '^detsum_([a-zA-Z]{1,2})_([A-Z])(_norm)?.txt$'
