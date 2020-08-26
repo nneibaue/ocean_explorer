@@ -406,7 +406,6 @@ class Depth:
                orbitals=['K'],
                normalized=True,
                noisy_scans=None):
-    print('noisy_scans', noisy_scans)
     self._instance_kwargs = {
         'path': path,
         'elements_of_interest': elements_of_interest,
