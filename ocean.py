@@ -6,7 +6,8 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from functools import reduce
-from plotting import encode_matplotlib_fig
+from plotting import encode_matplotlib_fig, _check_or_create_settings
+import ocean_utils
 
 DRIVE_BASE = '/content/gdrive/My Drive'
 PROFILE_FILE_FILTER = ['__profile__', 'available_props.json', 'property_map.json', 'settings.json']
@@ -547,6 +548,22 @@ class Profile:
 
     self._elements_of_interest = elements_of_interest
     depths = []
+
+    self.experiment_dir = experiment_dir
+
+    # Get noisy scans from settings
+    noisy_scans = []
+    _check_or_create_settings('noisy_scans', base_dir=self.experiment_dir)
+    noisy_scans_file = os.path.join(experiment_dir,
+                                    'settings',
+                                    ocean_utils.NOISY_SCANS_FILE)
+    with open(noisy_scans_file, 'r') as f:
+      scan_dict = json.load(f)
+    for scan in scan_dict:
+      if scan_dict[scan]:
+        noisy_scans.append(scan)
+
+    # Load depths
     for dir_or_file in os.listdir(experiment_dir):
       if dir_or_file in PROFILE_FILE_FILTER:
         continue
@@ -555,7 +572,8 @@ class Profile:
         d = Depth(os.path.join(fullpath),
                   elements_of_interest=elements_of_interest,
                   orbitals=['K'],
-                  normalized=True)
+                  normalized=True,
+                  noisy_scans=noisy_scans or None)
         depths.append(d)
         print(f"Successfully imported data for {d.depth}")
       except NameError as e:
@@ -563,7 +581,10 @@ class Profile:
         continue
 
     self.depths = depths
-    self.experiment_dir = os.path.join(DRIVE_BASE, experiment_dir)
+    
+
+    
+    
 
   def apply_element_filter(self, filter_dict):
     '''Applies element-wise filter depth-by-depth and scan-by-scan.'''
