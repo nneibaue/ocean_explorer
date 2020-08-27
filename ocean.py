@@ -614,8 +614,9 @@ def load_profiles(base_dir, elements_of_interest, orbitals, normalized):
   for dir_or_file in os.listdir(base_dir):
     match = re.search(pattern, dir_or_file)
     if match:
+      profile_path = os.path.join(base_dir, dir_or_file)
       profile_name = match.group(1)
       profiles[profile_name] = Profile(
-        dir_or_file, elements_of_interest=elements_of_interest,
+        profile_path, elements_of_interest=elements_of_interest,
         orbitals=orbitals, normalized=normalized)
   return profiles
