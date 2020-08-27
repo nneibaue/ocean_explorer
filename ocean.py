@@ -619,4 +619,5 @@ def load_profiles(base_dir, elements_of_interest, orbitals, normalized):
       profiles[profile_name] = Profile(
         profile_path, elements_of_interest=elements_of_interest,
         orbitals=orbitals, normalized=normalized)
+      ocean_utils.create_noisy_scans_file(profile_path)
   return profiles
