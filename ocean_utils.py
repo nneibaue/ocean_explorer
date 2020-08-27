@@ -4,7 +4,6 @@ import numpy as np
 import plotting
 import json
 import os
-import ocean
 import re
 
 NOISY_SCANS_FILE = 'noisy_scans.json'

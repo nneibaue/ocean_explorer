@@ -606,3 +606,16 @@ class Profile:
       detsums += d.detsums
     return detsums
             
+
+def load_profiles(base_dir, elements_of_interest, orbitals, normalized):
+  '''Loads profiles from a common directory into a dictionary'''
+  profiles = {}
+  pattern = ocean_utils.FileTemplates.PROFILE
+  for dir_or_file in os.listdir(base_dir):
+    match = re.search(pattern, dir_or_file)
+    if match:
+      profile_name = match.group(1)
+      profiles[profile_name] = Profile(
+        dir_or_file, elements_of_interest=elements_of_interest,
+        orbitals=orbitals, normalized=normalized)
+  return profiles

@@ -6,6 +6,7 @@ from shutil import rmtree
 import json
 import ocean
 
+
 def test_set_noisy_scan_flag():
   scan1 = ocean.Scan('test_profile/1m/scan2D_1')
   scan2 = ocean.Scan('test_profile/1m/scan2D_2')

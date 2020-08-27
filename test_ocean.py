@@ -6,6 +6,14 @@ import pandas as pd
 
 ELEMENTS = ['A', 'B', 'C']
 
+
+def test_load_profiles():
+  profiles = ocean.load_profiles('.', elements_of_interest=['A', 'B', 'C'],
+                                 orbitals=['K'], normalized=None)
+  assert isinstance(profiles['test'], ocean.Profile)
+  assert len(profiles['test'].depths) == 2
+
+
 class TestDetsum:
   fname = 'test_profile/1m/scan2D_1/detsum_A_K_norm.txt'
 
