@@ -6,6 +6,20 @@ from shutil import rmtree
 import json
 import ocean
 
+def test_reset_all_noise_flags():
+  d = ocean.Depth('test_profile/1m')
+  for scan in d.scans:
+    ocean_utils.set_noisy_scan_flag(scan, True, 'test_profile')
+
+  ocean_utils.reset_all_noise_flags('test_profile')
+
+  fname = os.path.join('test_profile', 'settings', 'noisy_scans.json')
+  with open(fname, 'r') as f:
+    noisy_scans_dict = json.load(f)
+
+  for name in noisy_scans_dict:
+    assert not noisy_scans_dict[name]
+
 
 def test_set_noisy_scan_flag():
   scan1 = ocean.Scan('test_profile/1m/scan2D_1')

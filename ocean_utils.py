@@ -41,6 +41,24 @@ def create_noisy_scans_file(experiment_dir):
     json.dump(noisy_scan_dict, f)
   
 
+def reset_all_noise_flags(profile_dir):
+  '''Sets noise flag on all scans to False.
+
+  Args:
+    profile_dir: directory containing a profile
+  '''
+  plotting._check_or_create_settings('noisy_scans', base_dir=profile_dir)
+  fname = os.path.join(profile_dir, 'settings', NOISY_SCANS_FILE)
+  with open(fname, 'r') as f:
+    noisy_scan_dict = json.load(f)
+
+  for name in noisy_scan_dict:
+    noisy_scan_dict[name] = False
+
+  with open(fname, 'w') as f:
+    json.dump(noisy_scan_dict, f)
+  
+
 def set_noisy_scan_flag(scan, isNoisy, base_dir=None):
   '''Flags a scan as noisy or not and updates the value in
      settings/noisy_scans.json.
