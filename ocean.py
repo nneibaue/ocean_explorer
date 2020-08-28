@@ -371,12 +371,16 @@ class Scan:
     return s
 
 class CombinedScan(Scan):
-  def __init__(self, scans):
+  def __init__(self, scans, exclude_noisy_scans=True):
     
     #make sure all scans are at the same depth
     assert len(set([s.depth for s in scans])) == 1
 
     self.depth = scans[0].depth
+    
+    if exclude_noisy_scans:
+      scans = [s for s in scans if not s.isNoisy]
+      
     self._scans = scans
 
 
