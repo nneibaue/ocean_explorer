@@ -18,16 +18,10 @@ def test_load_profiles():
 class TestCombinedScan:
   d = ocean.Depth('test_profile/1m')
 
-  def test_instantiation_no_noisy_scans(self):
-    ocean_utils.reset_all_noise_flags('test_profile')
-    cs = ocean.CombinedScan(self.d.scans)
-    assert isinstance(cs, ocean.CombinedScan)
-
-  def test_instantiation_with_noisy_scans(self):
-    ocean_utils.set_noisy_scan_flag(self.d.scans[1], True, 'test_profile')
+  def test_instantiation(self):
     cs = ocean.CombinedScan(self.d.scans)
     scan_names = [scan.name for scan in cs._scans]
-    assert scan_names == ['scan2D_1', 'scan2D_3']
+    assert scan_names == ['scan2D_1', 'scan2D_2', 'scan2D_3']
 
 
 class TestDetsum:

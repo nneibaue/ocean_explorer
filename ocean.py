@@ -15,6 +15,7 @@ PROFILE_FILE_FILTER = ['__profile__', 'available_props.json', 'property_map.json
 
 class Detsum:
   def __init__(self, path):
+    self.isNoisy = False
     self.filename = path.split('/')[-1]
     self.scan_name = path.split('/')[-2]
     self.depth = path.split('/')[-3]
@@ -141,7 +142,6 @@ class Scan:
     else:
       self.detsums = copy.detsums
     self.detsums = sorted(self.detsums, key = lambda d: d.element)
-    
 
   def _get_element_groups(self):
     elements = np.array(self.elements)
@@ -333,11 +333,22 @@ class Scan:
 
   def _make_detsums(self, template):
     detsums = []
+
+    # Get the noisy detsums
+    noisy_detsums_file = os.path.join(
+      self.path.split('/')[-3], 'settings', ocean_utils.NOISY_DETSUMS_FILE)
+    ocean_utils.create_noisy_detsums_file(self.path.split('/')[-3])
+    with open(noisy_detsums_file, 'r') as f:
+      noisy_detsums = json.load(f)
+
     for f in os.listdir(self.path):
       fullpath = os.path.join(self.path, f)
       #print(self._template, f, re.fullmatch(self._template, f))
       if re.fullmatch(self._template, f):
-        detsums.append(Detsum(fullpath))
+        this_detsum = Detsum(fullpath)
+        this_detsum.isNoisy = noisy_detsums[self.name][this_detsum.element]
+        detsums.append(this_detsum)
+
     for d in detsums:
       self.__dict__[f'{d.element}_{d.orbital}'] = d
     return detsums
@@ -371,15 +382,12 @@ class Scan:
     return s
 
 class CombinedScan(Scan):
-  def __init__(self, scans, exclude_noisy_scans=True):
+  def __init__(self, scans):
     
     #make sure all scans are at the same depth
     assert len(set([s.depth for s in scans])) == 1
 
     self.depth = scans[0].depth
-    
-    if exclude_noisy_scans:
-      scans = [s for s in scans if not s.isNoisy]
       
     self._scans = scans
 
@@ -408,8 +416,7 @@ class Depth:
   def __init__(self, path,
                elements_of_interest=None,
                orbitals=['K'],
-               normalized=True,
-               noisy_scans=None):
+               normalized=True):
     self._instance_kwargs = {
         'path': path,
         'elements_of_interest': elements_of_interest,
@@ -422,15 +429,13 @@ class Depth:
       raise NameError(f'{self.name} is not a valid name for a Depth!')
     #self.depth = re.search(ocean_utils.FileTemplates.DEPTH, path.split('/')[-1]).group(1)
     self.depth = path.split('/')[-1]
-
+    
     # Load the scans, flagging noisy ones
     for f in os.listdir(path):
       fullpath = os.path.join(path, f)
       try:
         this_scan = Scan(fullpath, elements_of_interest=elements_of_interest,
                          orbitals=orbitals, normalized=normalized)
-        if noisy_scans is not None and f in noisy_scans:
-          this_scan.isNoisy = True
         self.scans.append(this_scan)
       except NameError as e:
         print(e)
@@ -551,19 +556,6 @@ class Profile:
 
     self.experiment_dir = experiment_dir
 
-    # Get noisy scans from settings
-    noisy_scans = []
-    _check_or_create_settings('noisy_scans', base_dir=self.experiment_dir)
-    noisy_scans_file = os.path.join(experiment_dir,
-                                    'settings',
-                                    ocean_utils.NOISY_SCANS_FILE)
-    with open(noisy_scans_file, 'r') as f:
-      scan_dict = json.load(f)
-    for scan in scan_dict:
-      if scan_dict[scan]:
-        noisy_scans.append(scan)
-    self.noisy_scans = noisy_scans
-
     # Load depths
     for dir_or_file in os.listdir(experiment_dir):
       if dir_or_file in PROFILE_FILE_FILTER:
@@ -573,8 +565,7 @@ class Profile:
         d = Depth(os.path.join(fullpath),
                   elements_of_interest=elements_of_interest,
                   orbitals=['K'],
-                  normalized=True,
-                  noisy_scans=noisy_scans or None)
+                  normalized=True)
         depths.append(d)
         print(f"Successfully imported data for {d.depth}")
       except NameError as e:
@@ -623,5 +614,5 @@ def load_profiles(base_dir, elements_of_interest, orbitals, normalized):
       profiles[profile_name] = Profile(
         profile_path, elements_of_interest=elements_of_interest,
         orbitals=orbitals, normalized=normalized)
-      ocean_utils.create_noisy_scans_file(profile_path)
+      ocean_utils.create_noisy_detsums_file(profile_path)
   return profiles

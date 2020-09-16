@@ -8,33 +8,35 @@ import ocean
 
 def test_reset_all_noise_flags():
   d = ocean.Depth('test_profile/1m')
-  for scan in d.scans:
-    ocean_utils.set_noisy_scan_flag(scan, True, 'test_profile')
+  for detsum in d.detsums:
+    ocean_utils.set_noisy_detsum_flag(detsum, True, 'test_profile')
 
   ocean_utils.reset_all_noise_flags('test_profile')
 
-  fname = os.path.join('test_profile', 'settings', 'noisy_scans.json')
+  fname = os.path.join('test_profile', 'settings', 'noisy_detsums.json')
   with open(fname, 'r') as f:
-    noisy_scans_dict = json.load(f)
+    noisy_detsums_dict = json.load(f)
 
-  for name in noisy_scans_dict:
-    assert not noisy_scans_dict[name]
+  for scan_name in noisy_detsums_dict:
+    for element in scan_name:
+      assert not noisy_detsums_dict[scan_name][element]
 
 
-def test_set_noisy_scan_flag():
-  scan1 = ocean.Scan('test_profile/1m/scan2D_1')
-  scan2 = ocean.Scan('test_profile/1m/scan2D_2')
+def test_set_noisy_detsum_flag():
+  detsum1 = ocean.Detsum('test_profile/1m/scan2D_1/detsum_A_K_norm.txt')
+  detsum2 = ocean.Detsum('test_profile/1m/scan2D_2/detsum_B_K_norm.txt')
 
-  ocean_utils.set_noisy_scan_flag(scan1, True, base_dir='test_profile')
-  ocean_utils.set_noisy_scan_flag(scan2, False, base_dir='test_profile')
+  ocean_utils.set_noisy_detsum_flag(detsum1, True, base_dir='test_profile')
+  ocean_utils.set_noisy_detsum_flag(detsum2, False, base_dir='test_profile')
 
-  fname = os.path.join('test_profile', 'settings', 'noisy_scans.json')
+  fname = os.path.join('test_profile', 'settings', 'noisy_detsums.json')
   assert os.path.exists(fname)
+
   with open(fname, 'r') as f:
     settings = json.load(f)
 
-  assert settings['scan2D_1']
-  assert not settings['scan2D_2']
+  assert settings['scan2D_1']['A'] == True
+  assert settings['scan2D_2']['B'] == False
 
   rmtree('test_profile/settings')
 

@@ -6,7 +6,7 @@ import json
 import os
 import re
 
-NOISY_SCANS_FILE = 'noisy_scans.json'
+NOISY_DETSUMS_FILE = 'noisy_detsums.json'
 
 class FileTemplates:
   PROFILE = '^(.*)_profile$'
@@ -25,59 +25,66 @@ def get_scan_names(experiment_dir):
 
   return scans
 
-  
-def create_noisy_scans_file(experiment_dir):
-  plotting._check_or_create_settings('noisy_scans', base_dir=experiment_dir)
-  fname = os.path.join(experiment_dir, 'settings', NOISY_SCANS_FILE)
+def create_noisy_detsums_file(experiment_dir):
+  plotting._check_or_create_settings('noisy_detsums', base_dir=experiment_dir)
+  fname = os.path.join(experiment_dir, 'settings', NOISY_DETSUMS_FILE)
   with open(fname, 'r') as f:
-    noisy_scan_dict = json.load(f)
-
-  scan_names = get_scan_names(experiment_dir)
-  for name in scan_names:
-    if name not in noisy_scan_dict:
-      noisy_scan_dict[name] = False
+    noisy_detsum_dict = json.load(f)
+  
+  for dir_or_file in os.listdir(experiment_dir):
+    if re.fullmatch(FileTemplates.DEPTH, dir_or_file):
+      depth_path = os.path.join(experiment_dir, dir_or_file)
+      for scan_dir in os.listdir(depth_path):
+        if re.fullmatch(FileTemplates.SCAN, scan_dir):
+          scan_path = os.path.join(depth_path, scan_dir)
+          noisy_detsum_dict[scan_dir] = {}
+          for detsum in os.listdir(scan_path):
+            print(detsum)
+            match = re.fullmatch(FileTemplates.DETSUM, detsum)
+            if match and match.group(1) not in noisy_detsum_dict[scan_dir]:
+              noisy_detsum_dict[scan_dir][match.group(1)] = False
 
   with open(fname, 'w') as f:
-    json.dump(noisy_scan_dict, f)
+    json.dump(noisy_detsum_dict, f)
   
 
 def reset_all_noise_flags(profile_dir):
-  '''Sets noise flag on all scans to False.
+  '''Sets noise flag on all detsums to False.
 
   Args:
     profile_dir: directory containing a profile
   '''
-  plotting._check_or_create_settings('noisy_scans', base_dir=profile_dir)
-  fname = os.path.join(profile_dir, 'settings', NOISY_SCANS_FILE)
+  plotting._check_or_create_settings('noisy_detsums', base_dir=profile_dir)
+  fname = os.path.join(profile_dir, 'settings', NOISY_DETSUMS_FILE)
   with open(fname, 'r') as f:
-    noisy_scan_dict = json.load(f)
+    noisy_detsum_dict = json.load(f)
 
-  for name in noisy_scan_dict:
-    noisy_scan_dict[name] = False
+  for scan in noisy_detsum_dict:
+    for element in scan:
+      noisy_detsum_dict[scan][element] = False
 
   with open(fname, 'w') as f:
-    json.dump(noisy_scan_dict, f)
+    json.dump(noisy_detsum_dict, f)
   
 
-def set_noisy_scan_flag(scan, isNoisy, base_dir=None):
-  '''Flags a scan as noisy or not and updates the value in
-     settings/noisy_scans.json.
+def set_noisy_detsum_flag(detsum, isNoisy, base_dir=None):
+  '''Flags a detsum as noisy or not and updates the value in
+     settings/noisy_detsums.json.
 
   Args:
-    scan_name: str name of scan. This should match the directory name containing
-      files in that scan. E.g. 'scan2D_12345'
+    detsum: Detsum object 
     is_noisy: bool whether to set `scan_name` as noisy
     base_dir: str directory containing 'settings' subdir
   '''
   assert isinstance(isNoisy, bool)
-  scan.isNoisy = isNoisy
+  detsum.isNoisy = isNoisy
   
-  plotting._check_or_create_settings('noisy_scans', base_dir=base_dir)
-  fname = os.path.join(base_dir or '',  'settings', NOISY_SCANS_FILE)
+  plotting._check_or_create_settings('noisy_detsums', base_dir=base_dir)
+  fname = os.path.join(base_dir or '',  'settings', NOISY_DETSUMS_FILE)
 
   with open(fname, 'r') as f:
     settings = json.load(f)
-  settings[scan.name] = isNoisy
+  settings[detsum.scan_name][detsum.element] = isNoisy
   
   with open(fname, 'w') as f:
     json.dump(settings, f)
