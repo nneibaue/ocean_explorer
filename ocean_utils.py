@@ -39,7 +39,6 @@ def create_noisy_detsums_file(experiment_dir):
           scan_path = os.path.join(depth_path, scan_dir)
           noisy_detsum_dict[scan_dir] = {}
           for detsum in os.listdir(scan_path):
-            print(detsum)
             match = re.fullmatch(FileTemplates.DETSUM, detsum)
             if match and match.group(1) not in noisy_detsum_dict[scan_dir]:
               noisy_detsum_dict[scan_dir][match.group(1)] = False
