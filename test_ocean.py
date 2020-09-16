@@ -16,8 +16,10 @@ def test_load_profiles():
 
 
 class TestCombinedScan:
-  d = ocean.Depth('test_profile/1m')
+  ocean_utils.create_noisy_detsums_file('test_profile')
 
+  d = ocean.Depth('test_profile/1m')
+  
   def test_instantiation(self):
     cs = ocean.CombinedScan(self.d.scans)
     scan_names = [scan.name for scan in cs._scans]

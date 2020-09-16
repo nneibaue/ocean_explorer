@@ -337,7 +337,6 @@ class Scan:
     # Get the noisy detsums
     noisy_detsums_file = os.path.join(
       self.path.split('/')[-3], 'settings', ocean_utils.NOISY_DETSUMS_FILE)
-    ocean_utils.create_noisy_detsums_file(self.path.split('/')[-3])
     with open(noisy_detsums_file, 'r') as f:
       noisy_detsums = json.load(f)
 
@@ -555,7 +554,7 @@ class Profile:
     depths = []
 
     self.experiment_dir = experiment_dir
-
+    ocean_utils.create_noisy_detsums_file(experiment_dir)
     # Load depths
     for dir_or_file in os.listdir(experiment_dir):
       if dir_or_file in PROFILE_FILE_FILTER:
@@ -614,5 +613,4 @@ def load_profiles(base_dir, elements_of_interest, orbitals, normalized):
       profiles[profile_name] = Profile(
         profile_path, elements_of_interest=elements_of_interest,
         orbitals=orbitals, normalized=normalized)
-      ocean_utils.create_noisy_detsums_file(profile_path)
   return profiles
