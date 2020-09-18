@@ -11,7 +11,10 @@ import ocean_utils
 import json
 
 DRIVE_BASE = '/content/gdrive/My Drive'
-PROFILE_FILE_FILTER = ['__profile__', 'available_props.json', 'property_map.json', 'settings.json']
+SCAN_FILE_FILTER = ['.DS_Store']
+DEPTH_FILE_FILTER = ['.DS_Store', 'property_map.json', 'available_props.json', 'settings']
+
+PROFILE_BASE_DIR = 'deglitched_profiles'
 
 class Detsum:
   def __init__(self, path):
@@ -111,6 +114,7 @@ class Scan:
                copy=None):
 
     self.isNoisy = False
+    self.profile = path.split('/')[-3]
     self.depth = path.split('/')[-2]
     self.name = path.split('/')[-1]
     self._elements_of_interest = elements_of_interest
@@ -336,7 +340,8 @@ class Scan:
 
     # Get the noisy detsums
     noisy_detsums_file = os.path.join(
-      self.path.split('/')[-3], 'settings', ocean_utils.NOISY_DETSUMS_FILE)
+      PROFILE_BASE_DIR, self.profile, 'settings',
+      ocean_utils.NOISY_DETSUMS_FILE)
     with open(noisy_detsums_file, 'r') as f:
       noisy_detsums = json.load(f)
 
@@ -432,6 +437,8 @@ class Depth:
     # Load the scans, flagging noisy ones
     for f in os.listdir(path):
       fullpath = os.path.join(path, f)
+      if f in SCAN_FILE_FILTER:
+        continue
       try:
         this_scan = Scan(fullpath, elements_of_interest=elements_of_interest,
                          orbitals=orbitals, normalized=normalized)
@@ -557,7 +564,7 @@ class Profile:
     ocean_utils.create_noisy_detsums_file(experiment_dir)
     # Load depths
     for dir_or_file in os.listdir(experiment_dir):
-      if dir_or_file in PROFILE_FILE_FILTER:
+      if dir_or_file in DEPTH_FILE_FILTER:
         continue
       try:
         fullpath = os.path.join(experiment_dir, dir_or_file)
@@ -609,6 +616,7 @@ def load_profiles(base_dir, elements_of_interest, orbitals, normalized):
     match = re.search(pattern, dir_or_file)
     if match:
       profile_path = os.path.join(base_dir, dir_or_file)
+      ocean_utils.create_noisy_detsums_file(profile_path)
       profile_name = match.group(1)
       profiles[profile_name] = Profile(
         profile_path, elements_of_interest=elements_of_interest,

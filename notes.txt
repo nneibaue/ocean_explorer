@@ -1,3 +1,9 @@
+USEFUL LINKS:
+Running a local colab: https://research.google.com/colaboratory/local-runtimes.html
+
+
+
+
 7/27/2020 
 After conversation w/ NI, we are adding more granularity to the element filter settings controller. 
 Instead of having a flat setting for all Depths, there will be an individual setting for _each_ Scan

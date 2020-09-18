@@ -30,7 +30,6 @@ def create_noisy_detsums_file(experiment_dir):
   fname = os.path.join(experiment_dir, 'settings', NOISY_DETSUMS_FILE)
   with open(fname, 'r') as f:
     noisy_detsum_dict = json.load(f)
-  
   for dir_or_file in os.listdir(experiment_dir):
     if re.fullmatch(FileTemplates.DEPTH, dir_or_file):
       depth_path = os.path.join(experiment_dir, dir_or_file)
