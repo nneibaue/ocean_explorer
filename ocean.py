@@ -16,6 +16,11 @@ DEPTH_FILE_FILTER = ['.DS_Store', 'property_map.json', 'available_props.json', '
 
 PROFILE_BASE_DIR = 'deglitched_profiles'
 
+if os.getcwd() == '/content':
+  inDrive = True
+else:
+  inDrive = False
+
 class Detsum:
   def __init__(self, path):
     self.isNoisy = False
@@ -115,6 +120,7 @@ class Scan:
 
     self.isNoisy = False
     self.profile = path.split('/')[-3]
+    self.experiment_dir = '/'.join(path.split('/')[:-3])
     self.depth = path.split('/')[-2]
     self.name = path.split('/')[-1]
     self._elements_of_interest = elements_of_interest
@@ -340,7 +346,7 @@ class Scan:
 
     # Get the noisy detsums
     noisy_detsums_file = os.path.join(
-      PROFILE_BASE_DIR, self.profile, 'settings',
+      self.experiment_dir, self.profile, 'settings',
       ocean_utils.NOISY_DETSUMS_FILE)
     with open(noisy_detsums_file, 'r') as f:
       noisy_detsums = json.load(f)
@@ -561,6 +567,7 @@ class Profile:
     depths = []
 
     self.experiment_dir = experiment_dir
+    self.profile_name = '_'.join(self.experiment_dir.split('/')[-1].split('_')[:-1])
     ocean_utils.create_noisy_detsums_file(experiment_dir)
     # Load depths
     for dir_or_file in os.listdir(experiment_dir):
@@ -573,7 +580,7 @@ class Profile:
                   orbitals=['K'],
                   normalized=True)
         depths.append(d)
-        print(f"Successfully imported data for {d.depth}")
+        print(f"{self.profile_name}: Successfully imported data for {d.depth}")
       except NameError as e:
         print(e)
         continue
