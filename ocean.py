@@ -27,6 +27,7 @@ class Detsum:
     self.filename = path.split('/')[-1]
     self.scan_name = path.split('/')[-2]
     self.depth = path.split('/')[-3]
+    self.profile_dir = '/'.join(path.split('/')[:-3])
     if re.search('_norm.txt', self.filename):
       self.normalized = True
     else:
