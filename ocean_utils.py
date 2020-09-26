@@ -36,14 +36,15 @@ def create_noisy_detsums_file(experiment_dir):
       for scan_dir in os.listdir(depth_path):
         if re.fullmatch(FileTemplates.SCAN, scan_dir):
           scan_path = os.path.join(depth_path, scan_dir)
-          noisy_detsum_dict[scan_dir] = {}
+          if scan_dir not in noisy_detsum_dict:
+            noisy_detsum_dict[scan_dir] = {}
           for detsum in os.listdir(scan_path):
             match = re.fullmatch(FileTemplates.DETSUM, detsum)
             if match and match.group(1) not in noisy_detsum_dict[scan_dir]:
               noisy_detsum_dict[scan_dir][match.group(1)] = False
 
   with open(fname, 'w') as f:
-    json.dump(noisy_detsum_dict, f)
+    json.dump(noisy_detsum_dict, f, indent=2)
   
 
 def reset_all_noise_flags(profile_dir):
