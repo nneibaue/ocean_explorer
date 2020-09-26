@@ -8,6 +8,7 @@ import json
 import os
 import ipywidgets as iw
 import time
+from IPython.display import display, HTML
 
 COLORS = plt.cm.tab20(np.arange(20))
 PATTERNS = [None, '\\\\', '..', 'xx', '**', '++', 'oo', '00', '--', '\\\\\\', '...', 'xxx', '***', '+++', 'ooo', '000', '---']
@@ -647,3 +648,428 @@ class SettingsController:
     title = iw.HTML('<h2>Settings</h2>')
     
     return container([title, save, load, refresh], layout=self._layout)
+
+
+class DetsumPlot:
+    def __init__(self, detsum):
+        self.graph_output = iw.Output()
+        self.detsum = detsum
+        self.avg = np.mean(self.detsum.data)
+        self.min = np.nanmin(self.detsum.data)
+        self.max = np.nanmax(self.detsum.data)
+        self._default_layout = iw.Layout(width='230px')
+        
+        self.step = self.max/100
+        
+        self.isNoisy_checkbox = iw.Checkbox(description='Noisy', value=self.detsum.isNoisy)
+        self.isNoisy_checkbox.observe(self.set_noise_flag, names='value')
+        
+        self.force_refresh_button = iw.Button(description='refresh')
+        self.force_refresh_button.on_click(self.refresh_graph)
+        
+        
+        self.update_max({'new': self.max})
+        
+    def set_noise_flag(self, val):
+        utils.set_noisy_detsum_flag(self.detsum, val['new'])
+        
+        
+    def refresh_graph(self, _):
+        self.graph_output.clear_output(wait=True)
+        with self.graph_output:
+            im = iw.HTML(self.detsum.plot(base64=True, raw=True))
+            display(im)
+        
+    def update_max(self, val):
+        self.graph_output.clear_output(wait=True)
+        vmax = float(val['new'])
+        with self.graph_output:
+            im = iw.HTML(self.detsum.plot(base64=True, vmax=vmax, raw=True))
+            display(im)
+                                 
+    def update_min(self, val):
+        self.graph_output.clear_output(wait=True)
+        vmin = float(val['new'])
+        with self.graph_output:
+            im = iw.HTML(self.detsum.plot(base64=True, vmin=vmin, raw=True))
+            display(im)
+            
+        
+    @property
+    def widget(self):
+        self.max_slider = iw.FloatSlider(layout=self._default_layout,
+                                             min=self.step, max=2*self.max, value=self.max, step=self.step,
+                                             readout_format='.2e', continuous_update=False)
+        
+        self.min_slider = iw.FloatSlider(layout=self._default_layout,
+                                             min=self.step, max=2*self.max, value=self.step, step=self.step,
+                                             readout_format='.2e', continuous_update=False)
+        
+        self.max_slider.observe(self.update_max, names='value')
+        self.min_slider.observe(self.update_min, names='value')
+        min_label = iw.Text(f'min counts: {self.min:0.2e}')
+        max_label = iw.Text(f'max counts: {self.max:0.2e}')
+        avg_label = iw.Text(f'avg counts: {self.avg:0.2e}')
+        labels = iw.HTML(f'''<center><p>min: {self.min:0.2e}</p>
+                                     <p>max: {self.max:0.2e}</p>
+                                     <p>avg: {self.avg:0.2e}</p></center>''',
+                                layout=self._default_layout)
+        #labels = iw.VBox([min_label, max_label, avg_label], layout=self._default_layout)
+        
+        vbox = iw.VBox([self.graph_output,
+                                self.min_slider,
+                                self.max_slider,
+                                labels,
+                                iw.HBox([self.force_refresh_button, self.isNoisy_checkbox])])
+        return vbox
+
+
+class NoiseFlaggingUI:
+    def __init__(self, profile):
+        self._tab_dict = {}
+        for depth in profile.depths:
+            plots = [DetsumPlot(d).widget for d in depth.detsums]
+            rows = []
+            for i in np.arange(0, len(plots), 4):
+                rows.append(iw.HBox(plots[i:i+4]))
+                
+            self._tab_dict[depth.depth] = iw.VBox(rows)
+            
+            
+    @property
+    def widget(self):
+        children = []
+        tabs = iw.Tab()
+        for i, depth in enumerate(self._tab_dict):
+            tabs.set_title(i, depth)
+            children.append(self._tab_dict[depth])
+            
+        tabs.children = children
+        return tabs
+
+def noise_flagging_ui(profile):
+  nf = NoiseFlaggingUI(profile)
+  display(nf.widget)
+
+def ribbon_plot_ui(profile, elements_of_interest):
+  experiment_dir = profile.experiment_dir
+  status_indicator = iw.Output()
+  with status_indicator:
+    display(iw.HTML('<h3 style="color:green">Ready</h3>'))
+  graph_output = iw.Output()
+  # element_inputs = {}
+  # element_filter = {}
+  test = {}
+  smalltextbox = iw.Layout(width='50px', height='25px')
+  # filter_func = lambda n: lambda x: np.mean(x) + np.std(x)*n
+  
+  element_filter = ElementFilterPanel(profile,
+                                    input_type='text',
+                                    orientation='horizontal',
+                                    experiment_dir=experiment_dir)#, **layout_kwargs)
+  filter_settings = SettingsController(element_filter)
+  
+  # for e in ELEMENTS_OF_INTEREST:
+  #   element_inputs[e] = iw.Textarea(value='2', layout=smalltextbox)
+  #   element_filter[e] = filter_func(2)
+    
+  filter_by_control = iw.Dropdown(options=elements_of_interest,
+                                          value='Cu', description='Filter by:',
+                                          layout=iw.Layout(width='200px'))
+  
+  combine_scans_checkbox = iw.Checkbox(value=True, description='Combine Scans')
+  
+  combine_detsums_checkbox = iw.Checkbox(value=False, description='Combine Detsums')
+  
+  normalize_by_control = iw.Dropdown(options=['counts', 'pixels'],
+                                            value='counts',
+                                            description='Normalize By',
+                                            layout=iw.Layout(width='200px'))
+  
+  
+  N_input = iw.Textarea(value='8', layout=iw.Layout(width='150px'), description='N')
+  update_button = iw.Button(description='Update Plot')                          
+  clear_output_control = iw.Checkbox(value=False, description='Clear output after each run')
+  
+  # element_filter_input = iw.HBox(
+  #     [iw.VBox([iw.HTML(f'<h3>{e}</h3>'), element_inputs[e]]) for e in ELEMENTS_OF_INTEREST]
+  # )
+  
+  save_html_button = iw.Button(description='Save HTML')
+  def update_plot(b):
+    element_filter.save_settings()
+    status_indicator.clear_output()
+    # for e in ELEMENTS_OF_INTEREST:
+    #   val = float(element_inputs[e].value)
+    #   element_filter[e] = filter_func(val)
+    with status_indicator:
+      display(iw.HTML('<h3 style="color:red">Working...</h3>'))
+
+    info_banner_html = (f'Filter by: {filter_by_control.value} | '
+                      f'Comb. Scans: {combine_scans_checkbox.value} | '
+                      f'Comb. Detsums: {combine_detsums_checkbox.value} | '
+                      f'N: {N_input.value} | '
+                      f'Normalize By: {normalize_by_control.value} | ')
+    info_banner = iw.HTML(info_banner_html)
+
+    plot = ribbon_plot(profile, element_filter=element_filter.filter_dict,
+                filter_by=filter_by_control.value,
+                combine_detsums=combine_detsums_checkbox.value,
+                combine_scans=combine_scans_checkbox.value,
+                N=int(N_input.value),
+                normalize_by=normalize_by_control.value,
+                base64=True)
+    if clear_output_control.value:
+      graph_output.clear_output()
+
+    with graph_output:
+      #display(iw.HTML(plot))
+      display(iw.VBox([iw.HTML(plot), iw.HTML(info_banner_html)]))
+
+    status_indicator.clear_output()
+    with status_indicator:
+      display(iw.HTML('<h3 style="color:green">Ready</h3>'))
+  
+  update_button.on_click(update_plot)
+  
+
+  update_plot('this param does not matter here')  
+
+  #https://stackoverflow.com/questions/55336771/align-ipywidget-button-to-center
+  controls_bot = iw.Box([element_filter.widget, filter_settings.widget],
+                                layout=iw.Layout(display='flex', align_items='center'))
+  controls_top = iw.HBox([iw.VBox([update_button, status_indicator]),
+                              iw.VBox([filter_by_control, normalize_by_control]),
+                              iw.VBox([combine_scans_checkbox, combine_detsums_checkbox]),
+                              N_input, clear_output_control])
+
+  controls = iw.VBox([controls_top, controls_bot],
+                            layout=iw.Layout(
+                                border='1px solid black',
+                                width='100%',
+                            ))
+  app = iw.VBox([graph_output, controls])
+  display(app)
+
+
+def image_ui(profile, elements_of_interest):
+  experiment_dir = profile.experiment_dir
+  plot_area = iw.Output()
+  status_indicator = iw.Output()
+  group_indicator = iw.Output()
+  
+  with group_indicator:
+    display(iw.HTML('<h3 style="color:orange">No Group Selected</h3>'))
+
+  with status_indicator:
+    display(iw.HTML('<h3 style="color:green">Ready</h3>'))
+
+  
+  # Making the controls
+
+  layout_kwargs = dict(width='85%', border='1px solid black')
+  #settings_layout = dict(width='20%', border='1px solid blue')
+
+  depth_selector = PropSelector(profile.depths, orientation='horizontal', title='Depths to plot',
+                                   description_func=lambda d: d.depth, **layout_kwargs)
+  element_filter = ElementFilterPanel(profile,
+                                    orientation='horizontal',
+                                    experiment_dir=experiment_dir)
+
+  filter_settings = SettingsController(element_filter)
+
+  element_plot_selector = PropSelector(elements_of_interest,
+                                          orientation='horizontal',
+                                          title='Elements to plot',
+                                          **layout_kwargs)
+
+  element_group_selector = PropSelector(elements_of_interest,
+                                           orientation='horizontal',
+                                           title='Groups to show',
+                                           **layout_kwargs)
+
+  combine_detsums_checkbox = iw.Checkbox(value=False, indent=False, description='Combine Detsums')
+  update_button = iw.Button(description='Update')
+  raw_data_toggle = iw.ToggleButtons(value='Filtered', options=['Filtered', 'Raw'])
+  show_groups_toggle = iw.ToggleButton(value=True, description='Show Groups')
+  exclusive_groups_toggle = iw.ToggleButtons(value='Exclusive', options=['Exclusive', 'Nonexclusive'])
+
+  controls_bottom = iw.HBox([update_button,
+                                          show_groups_toggle,
+                                          exclusive_groups_toggle,
+                                          raw_data_toggle,
+                                          #combine_detsums_checkbox,
+                                          status_indicator],
+                                         layout=iw.Layout(padding='5px', **layout_kwargs))
+
+
+  controls_right = iw.HBox([
+      element_filter.widget, iw.VBox([
+        combine_detsums_checkbox,
+        filter_settings.widget])
+      ],
+      layout=iw.Layout(**layout_kwargs))
+  controls_top = iw.VBox([depth_selector.widget,
+                                   element_plot_selector.widget,
+                                   controls_right,
+                                   #iw.HBox([group_indicator, show_groups_toggle]),
+                                   element_group_selector.widget,
+                                   group_indicator])
+
+  # controls_right = iw.VBox([iw.HTML('Hightlight group\ncontaining elements:'),
+  #                                   element_group_selector.widget],
+  #                                  layout=iw.Layout(border='1px solid black'))
+
+  # controls = iw.HBox([controls_left, controls_right], layout=iw.Layout(width='85%'))
+  controls = iw.VBox([controls_top, controls_bottom])
+                            
+  rows = []
+  rows_raw = []
+  rows_groups_exclusive = []
+  rows_groups_exclusive_raw = []
+  rows_groups_nonexclusive = []
+  rows_groups_nonexclusive_raw = []
+  
+  current_group = []
+
+
+  def show_plots(val):
+    plot_area.clear_output()
+    show = show_groups_toggle.value
+    exclusive = exclusive_groups_toggle.value == 'Exclusive'
+    with plot_area:
+      if raw_data_toggle.value == 'Raw':
+        if show and exclusive:
+          display(iw.VBox(rows_groups_exclusive_raw))
+        elif show and not exclusive:
+          display(iw.VBox(rows_groups_nonexclusive_raw))
+        elif not show:
+          display(iw.VBox(rows_raw))
+      elif raw_data_toggle.value == 'Filtered':
+        if show and exclusive:
+          display(iw.VBox(rows_groups_exclusive))
+        if show and not exclusive:
+          display(iw.VBox(rows_groups_nonexclusive))
+        elif not show:
+          display(iw.VBox(rows))
+        
+    status_indicator.clear_output()
+    with status_indicator:
+      display(iw.HTML('<h3 style="color:green">Ready</h3>'))
+
+
+  def update_group(element, val):
+    nonlocal current_group
+    if val:
+      current_group.append(element)
+    elif not val:
+      current_group.remove(element)
+
+    sorted_group = [elements_of_interest[elements_of_interest.index(element)] if
+                                          element in current_group else None for element in elements_of_interest]
+    sorted_group = list(filter(lambda x: x, sorted_group))
+    group_indicator.clear_output()
+    with group_indicator:
+      if not current_group:
+        display(iw.HTML('<h3 style="color:orange">No group selected</h3>'))
+      else:
+        group_str = '  |  '.join(sorted_group)
+        display(iw.HTML(f'<h3 style="color:red">Group Selected: {group_str}</hp>'))
+    current_group = sorted_group
+
+  def generate_plots(b):
+    element_filter.save_settings()
+    status_indicator.clear_output()
+    with status_indicator:
+      display(iw.HTML('<h3 style="color:red">Working....</h3>'))
+
+    depths_to_plot = depth_selector.selected_props
+    if not depths_to_plot:
+      status_indicator.clear_output()
+      with status_indicator:
+        display(iw.HTML('<h3 style="color:orange">No Depth Selected!</h3>'))
+      return
+
+    elements_to_plot = element_plot_selector.selected_props
+
+    group = '|'.join(element_group_selector.selected_props)
+
+    for depth in depths_to_plot:
+      depth.apply_element_filter(element_filter.filter_dict[depth.depth],
+                                 combine_detsums=combine_detsums_checkbox.value)
+
+    def get_row(depth, elements, raw, show_groups, exclusive):
+      detsums = sorted(depth.detsums, key=lambda d: d.element)
+      plots = []
+      #group = '|'.join(current_group)
+      for scan in depth.scans:
+        data = scan.data['element_group'].values.reshape(scan.detsums[0].shape)
+        for detsum in scan.detsums:
+          if detsum.element not in elements:
+            continue
+          fig, ax = plt.subplots(figsize=(15, 15))
+          detsum.plot(raw=raw, ax=ax)
+          if show_groups and current_group:
+            fn = np.vectorize(lambda group: utils.check_groups(group, current_group, exclusive=exclusive))
+            rows, cols = np.where(fn(data))
+            ax.scatter(cols, rows, s=20, color='red')
+          plot = encode_matplotlib_fig(fig)
+          plt.close()
+          plots.append(iw.HTML(plot))
+      return plots
+
+    nonlocal rows
+    nonlocal rows_raw
+    nonlocal rows_groups_exclusive
+    nonlocal rows_groups_exclusive_raw
+    nonlocal rows_groups_nonexclusive
+    nonlocal rows_groups_nonexclusive_raw
+
+    
+    rows = [iw.HBox(get_row(depth, elements_to_plot, False, False, False)) for depth in depths_to_plot]
+    rows_raw = [iw.HBox(get_row(depth, elements_to_plot, True, False, False)) for depth in depths_to_plot]
+    rows_groups_exclusive = [iw.HBox(get_row(depth, elements_to_plot, False, True, True)) for depth in depths_to_plot]
+    rows_groups_exclusive_raw = [iw.HBox(get_row(depth, elements_to_plot, True, True, True)) for depth in depths_to_plot]
+    rows_groups_nonexclusive = [iw.HBox(get_row(depth, elements_to_plot, False, True, False)) for depth in depths_to_plot]
+    rows_groups_nonexclusive_raw = [iw.HBox(get_row(depth, elements_to_plot, True, True, False)) for depth in depths_to_plot]
+
+    show_plots(_)
+
+
+  update_button.on_click(generate_plots)
+  raw_data_toggle.observe(show_plots, 'value')
+  show_groups_toggle.observe(show_plots, 'value')
+  exclusive_groups_toggle.observe(show_plots, 'value')
+  element_group_selector.observe(update_group)
+  # for selector in depth_selectors.values():
+  #   selector.observe(update_plot)
+  display(iw.VBox([controls, plot_area]))
+
+
+def run_ui(profile_dict, ui_func, title=None):
+  widgets = []
+  if title is not None:
+    widgets.append(iw.HTML(f'<h2>{title}</h2>'))
+
+  dropdown = iw.Dropdown(description='Select Profile', options=profile_dict)
+  run_button = iw.Button(description='Run')
+  text_output = iw.Output()
+  widgets.append(iw.HBox([dropdown, run_button, text_output]))
+
+  ui_output = iw.Output()
+  widgets.append(ui_output)
+
+  with text_output:
+      display(iw.HTML('<div style="color:Green">Ready...</div>'))
+  def run(_):
+      text_output.clear_output()
+      with text_output:
+          display(iw.HTML('<div style="color:red">Working...</div>'))
+      ui_output.clear_output()
+      with ui_output:
+          ui_func(dropdown.value)
+      text_output.clear_output()
+      with text_output:
+          display(iw.HTML('<div style="color:green">Ready...</div>'))
+  run_button.on_click(run)
+  display(iw.VBox(widgets))
