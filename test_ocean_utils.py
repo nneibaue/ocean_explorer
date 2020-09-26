@@ -9,7 +9,7 @@ import ocean
 def test_reset_all_noise_flags():
   d = ocean.Depth('test_profile/1m')
   for detsum in d.detsums:
-    ocean_utils.set_noisy_detsum_flag(detsum, True, 'test_profile')
+    ocean_utils.set_noisy_detsum_flag(detsum, True)
 
   ocean_utils.reset_all_noise_flags('test_profile')
 
@@ -26,8 +26,8 @@ def test_set_noisy_detsum_flag():
   detsum1 = ocean.Detsum('test_profile/1m/scan2D_1/detsum_A_K_norm.txt')
   detsum2 = ocean.Detsum('test_profile/1m/scan2D_2/detsum_B_K_norm.txt')
 
-  ocean_utils.set_noisy_detsum_flag(detsum1, True, base_dir='test_profile')
-  ocean_utils.set_noisy_detsum_flag(detsum2, False, base_dir='test_profile')
+  ocean_utils.set_noisy_detsum_flag(detsum1, True)
+  ocean_utils.set_noisy_detsum_flag(detsum2, False)
 
   fname = os.path.join('test_profile', 'settings', 'noisy_detsums.json')
   assert os.path.exists(fname)

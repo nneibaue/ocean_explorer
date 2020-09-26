@@ -45,8 +45,6 @@ class Detsum:
 
   @property
   def data(self):
-    if self.isNoisy:
-      self.add_mask(np.full(self.shape, np.nan))
     return self._apply_masks()
 
   @property
@@ -61,6 +59,8 @@ class Detsum:
     return np.logical_and.reduce(self._masks)
 
   def _apply_masks(self):
+    if self.isNoisy:
+      return np.full(self.shape, np.nan)
     data = self._data_raw.copy()
     if len(self._masks) == 0:
       return data
@@ -69,7 +69,7 @@ class Detsum:
 
   def add_mask(self, mask):
     '''Adds a new mask'''
-    if mask.shape != self.data.shape:
+    if mask.shape != self.shape:
       raise ValueError(f'Trying to add mask of shape {mask.shape} to Detsum of shape {self.data.shape}')
     self._masks.append(mask)
 

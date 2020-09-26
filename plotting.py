@@ -167,8 +167,7 @@ def ribbon_plot(profile,
                 combine_detsums=True,
                 N=8,
                 normalize_by='counts',
-                base64=False,
-                experiment_dir=None):
+                base64=False):
   '''Shows fractional concentration of element among different groups.
 
   Args:
@@ -186,9 +185,6 @@ def ribbon_plot(profile,
     normalize_by: string. Which quantity to use for data normalization. This
       can either be 'counts' or 'pixels'.
     base64: bool. If this is True, will encode the graph and return html image element.
-    experiment_dir: optional directory containing property information. If this is None, then properties
-      will be saved to local disk (if using colab, this is the local directory on the Colab machine, which
-      may be deleted when a new instance of the Notebook is loaded)
     '''
 
   fig, ax = plt.subplots(figsize=(16, 4))
@@ -197,6 +193,9 @@ def ribbon_plot(profile,
   depths = profile.depths
   depths = sorted(depths, key=lambda d: int(d.depth[:-1]), reverse=True)
   profile.apply_element_filter(element_filter)
+
+  #TODO tidy up enums
+  experiment_dir = 'deglitched_profiles'
 
   if not _prop_list_exists(experiment_dir):
     _create_prop_list(dir_name=experiment_dir, overwrite=True)
