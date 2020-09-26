@@ -66,18 +66,17 @@ def reset_all_noise_flags(profile_dir):
     json.dump(noisy_detsum_dict, f)
   
 
-def set_noisy_detsum_flag(detsum, isNoisy, base_dir=None):
+def set_noisy_detsum_flag(detsum, isNoisy):
   '''Flags a detsum as noisy or not and updates the value in
      settings/noisy_detsums.json.
 
   Args:
     detsum: Detsum object 
     is_noisy: bool whether to set `scan_name` as noisy
-    base_dir: str directory containing 'settings' subdir
   '''
   assert isinstance(isNoisy, bool)
   detsum.isNoisy = isNoisy
-  
+  base_dir = detsum.profile_dir 
   plotting._check_or_create_settings('noisy_detsums', base_dir=base_dir)
   fname = os.path.join(base_dir or '',  'settings', NOISY_DETSUMS_FILE)
 
