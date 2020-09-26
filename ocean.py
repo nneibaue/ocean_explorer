@@ -46,7 +46,7 @@ class Detsum:
   @property
   def data(self):
     if self.isNoisy:
-      self.add_mask(np.full(self.shape, np.nan)
+      self.add_mask(np.full(self.shape, np.nan))
     return self._apply_masks()
 
   @property
