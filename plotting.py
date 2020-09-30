@@ -8,6 +8,7 @@ import json
 import os
 import ipywidgets as iw
 import time
+import ocean_utils as utils
 from IPython.display import display, HTML
 
 COLORS = plt.cm.tab20(np.arange(20))
@@ -1033,7 +1034,7 @@ def image_ui(profile, elements_of_interest):
     rows_groups_nonexclusive = [iw.HBox(get_row(depth, elements_to_plot, False, True, False)) for depth in depths_to_plot]
     rows_groups_nonexclusive_raw = [iw.HBox(get_row(depth, elements_to_plot, True, True, False)) for depth in depths_to_plot]
 
-    show_plots(_)
+    show_plots(0)
 
 
   update_button.on_click(generate_plots)
