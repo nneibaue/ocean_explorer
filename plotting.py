@@ -680,6 +680,23 @@ class DetsumPlot:
         with self.graph_output:
             im = iw.HTML(self.detsum.plot(base64=True, raw=True))
             display(im)
+
+    def update_max_min(self, _):
+      vmin = float(self.min_slider.value)
+      vmax = float(self.max_slider.value)
+      try:
+        plot = self.detsum.plot(base64=True,
+                                raw=True,
+                                vmin=vmin,
+                                vmax=vmax)
+        to_display = iw.HTML(plot)
+      except ValueError as e:
+        to_display = iw.HTML(f'<p style="red">{str(e)}!</p>')
+      self.graph_output.clear_output(wait=True) 
+      with self.graph_output:
+        display(to_display)
+          
+        
         
     def update_max(self, val):
         self.graph_output.clear_output(wait=True)
@@ -706,8 +723,10 @@ class DetsumPlot:
                                              min=self.step, max=2*self.max, value=self.step, step=self.step,
                                              readout_format='.2e', continuous_update=False)
         
-        self.max_slider.observe(self.update_max, names='value')
-        self.min_slider.observe(self.update_min, names='value')
+        # self.max_slider.observe(self.update_max, names='value')
+        # self.min_slider.observe(self.update_min, names='value')
+        self.max_slider.observe(self.update_max_min, names='value')
+        self.min_slider.observe(self.update_max_min, names='value')
         min_label = iw.Text(f'min counts: {self.min:0.2e}')
         max_label = iw.Text(f'max counts: {self.max:0.2e}')
         avg_label = iw.Text(f'avg counts: {self.avg:0.2e}')
