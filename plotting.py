@@ -691,7 +691,7 @@ class DetsumPlot:
                                 vmax=vmax)
         to_display = iw.HTML(plot)
       except ValueError as e:
-        to_display = iw.HTML(f'<p style="red">{str(e)}!</p>')
+        to_display = iw.HTML(f'<p style="color:red">{str(e)}!</p>')
       self.graph_output.clear_output(wait=True) 
       with self.graph_output:
         display(to_display)
