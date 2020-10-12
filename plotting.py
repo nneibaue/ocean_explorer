@@ -646,9 +646,9 @@ class SettingsController:
     save = iw.HBox([self.save_button, self.save_widget])
     load = iw.HBox([self.load_button, self.load_widget])
     refresh = self.refresh_button
-    title = iw.HTML('<h2>Settings</h2>')
+    #title = iw.HTML('<h2>Settings</h2>')
     
-    return container([title, save, load, refresh], layout=self._layout)
+    return container([save, load, refresh], layout=self._layout)
 
 
 class DetsumPlot:
@@ -887,7 +887,7 @@ def image_ui(profile, elements_of_interest):
   
   # Making the controls
 
-  layout_kwargs = dict(width='85%', border='1px solid black')
+  layout_kwargs = dict(width='100%', border='1px solid black')
   #settings_layout = dict(width='20%', border='1px solid blue')
 
   depth_selector = PropSelector(profile.depths, orientation='horizontal', title='Depths to plot',
@@ -896,7 +896,7 @@ def image_ui(profile, elements_of_interest):
                                     orientation='horizontal',
                                     experiment_dir=experiment_dir)
 
-  filter_settings = SettingsController(element_filter)
+  filter_settings = SettingsController(element_filter, orientation='horizontal')
 
   element_plot_selector = PropSelector(elements_of_interest,
                                           orientation='horizontal',
@@ -918,29 +918,17 @@ def image_ui(profile, elements_of_interest):
                                           show_groups_toggle,
                                           exclusive_groups_toggle,
                                           raw_data_toggle,
-                                          #combine_detsums_checkbox,
                                           status_indicator],
                                          layout=iw.Layout(padding='5px', **layout_kwargs))
 
 
-  controls_right = iw.HBox([
-      element_filter.widget, iw.VBox([
-        combine_detsums_checkbox,
-        filter_settings.widget])
-      ],
-      layout=iw.Layout(**layout_kwargs))
   controls_top = iw.VBox([depth_selector.widget,
                                    element_plot_selector.widget,
-                                   controls_right,
-                                   #iw.HBox([group_indicator, show_groups_toggle]),
+                                   element_filter.widget,
+                                   filter_settings.widget,
                                    element_group_selector.widget,
                                    group_indicator])
 
-  # controls_right = iw.VBox([iw.HTML('Hightlight group\ncontaining elements:'),
-  #                                   element_group_selector.widget],
-  #                                  layout=iw.Layout(border='1px solid black'))
-
-  # controls = iw.HBox([controls_left, controls_right], layout=iw.Layout(width='85%'))
   controls = iw.VBox([controls_top, controls_bottom])
                             
   rows = []
