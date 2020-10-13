@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+# Deactivate conda stuff (if present)
+conda deactivate 
+
 # Activate venv
 source env/bin/activate
 
