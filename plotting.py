@@ -8,38 +8,30 @@ import json
 import os
 import ipywidgets as iw
 import time
+import ocean_utils as utils
+from IPython.display import display, HTML
 
 COLORS = plt.cm.tab20(np.arange(20))
 PATTERNS = [None, '\\\\', '..', 'xx', '**', '++', 'oo', '00', '--', '\\\\\\', '...', 'xxx', '***', '+++', 'ooo', '000', '---']
 SMALLTEXTBOX = iw.Layout(width='50px', height='25px')
 PROP_FILE_AVAILABLE = 'available_props.json'
 PROP_FILE_MAP = 'property_map.json'
-SETTINGS_FILE = 'settings.json'
 
 
-def _check_or_create_settings(dir_name=None, setting_key=None):
-  '''Checks to see if a settings file exists or create a new one'''
-  fname = SETTINGS_FILE
-  if dir_name is not None:
-    fname = os.path.join(dir_name, fname)
-  
-  if not os.path.exists(fname):
-    if setting_key is not None:
-      settings = {setting_key: {}}
-    else:
-      settings = {}
+def _check_or_create_settings(setting_key, base_dir=None):
+
+  if base_dir is not None:
+    settings_dir = os.path.join(base_dir, 'settings')
   else:
-    if setting_key is None:
-      return
-    with open(fname, 'r') as f:
-      settings = json.load(f)
-    if setting_key in settings:
-      return
-    settings.update({setting_key: {}})
-  with open(fname, 'w') as f:
-    json.dump(settings, f, indent=2)
+    settings_dir = 'settings'
 
-  
+  if not os.path.isdir(settings_dir):
+    os.makedirs(settings_dir) 
+
+  fname = os.path.join(settings_dir, f'{setting_key}.json')
+  if not os.path.exists(fname):
+    with open(fname, 'w') as f:
+      json.dump({}, f, indent=2)
 
 
 def _prop_list_exists(dir_name=None):
@@ -170,19 +162,18 @@ def encode_matplotlib_fig(fig):
   plt.close(fig)
   return f"<img src='data:image/png;base64,{data}'/>"
 
-def ribbon_plot(depths,
+def ribbon_plot(profile,
                 element_filter,
                 filter_by='Cu',
                 combine_scans=True,
                 combine_detsums=True,
                 N=8,
                 normalize_by='counts',
-                base64=False,
-                experiment_dir=None):
+                base64=False):
   '''Shows fractional concentration of element among different groups.
 
   Args:
-    filter_by: string. Element under investigation
+    profile: ocean.Profile object
     element_filter: dict specifying how elements should be filtered. For more 
       info, see `Depth.apply_element_filter`. In Colab, this can be done by
       opening a new cell and running `Depth.apply_element_filter?`.
@@ -196,15 +187,17 @@ def ribbon_plot(depths,
     normalize_by: string. Which quantity to use for data normalization. This
       can either be 'counts' or 'pixels'.
     base64: bool. If this is True, will encode the graph and return html image element.
-    experiment_dir: optional directory containing property information. If this is None, then properties
-      will be saved to local disk (if using colab, this is the local directory on the Colab machine, which
-      may be deleted when a new instance of the Notebook is loaded)
     '''
 
   fig, ax = plt.subplots(figsize=(16, 4))
 
   # Sort depth objects by depth
+  depths = profile.depths
   depths = sorted(depths, key=lambda d: int(d.depth[:-1]), reverse=True)
+  profile.apply_element_filter(element_filter)
+
+  #TODO tidy up enums
+  experiment_dir = 'deglitched_profiles'
 
   if not _prop_list_exists(experiment_dir):
     _create_prop_list(dir_name=experiment_dir, overwrite=True)
@@ -269,7 +262,6 @@ def ribbon_plot(depths,
   i=0
   yticklabels = []
   for depth in depths:
-    depth.apply_element_filter(element_filter, combine_detsums=combine_detsums)
     if combine_scans:
       scans = [depth.combined_scan]
       yticklabels.append(depth.depth)
@@ -369,10 +361,119 @@ class PropSelector:
       box.observe(lambda b, prop=prop: handler_wrapper(prop, b), names='value')
 
 
-class ElementFilter:
-  SETTING_KEY = 'element_filter'
+class ElementFilterPanel:
+  SETTING_KEY = 'element_filter_panel'
+  def __init__(self, profile, layout_kwargs={}, **element_filter_kwargs):
+
+    self._element_filter_kwargs = element_filter_kwargs
+    self._layout_kwargs = layout_kwargs
+
+    # {depth_value: {scan_number: {ElementFilterSinglePane instance}}
+    self._element_filters = {}
+
+    for depth in profile.depths:
+      this_scan_dict = self._make_scan_dict(depth)
+      self._element_filters[depth.depth] = this_scan_dict
+
+    fname = f'{self.SETTING_KEY}.json'
+    self.experiment_dir = profile.experiment_dir
+    self.settings_file = os.path.join(self.experiment_dir, 'settings', fname)
+
+    # Make sure there is a settings file present with the right key for this widget
+    _check_or_create_settings(self.SETTING_KEY, base_dir=self.experiment_dir)
+
+  def _make_scan_dict(self, depth):
+    this_depth = {}
+    for scan in depth.scans:
+      this_depth[scan.scan_number] = ElementFilterSinglePane(
+          elements=scan.elements, **self._element_filter_kwargs)
+    return this_depth
+
+
+  @property
+  def filter_dict(self):
+    d = {}
+    for depth, scans in self._element_filters.items():
+      d[depth] = {}
+      for scan_num, element_filter in scans.items():
+        d[depth][scan_num] = element_filter.filter_dict
+
+    return d
+
+  @property
+  def value_dict(self):
+    d = {}
+    for depth, scans in self._element_filters.items():
+      d[depth] = {}
+      for scan_num, element_filter in scans.items():
+        d[depth][scan_num] = element_filter.value_dict
+
+    return d
+      
+  def save_settings(self, key='latest'):
+    '''Saves the current element filter as `key` in "settings.json"'''
+    if not key:
+      return
+
+    # Read settings into memory
+    with open(self.settings_file, 'r') as f:
+      settings = json.load(f)
+    
+    # Modify setting
+    settings[key] = self.value_dict
+
+    # Write settings to disk
+    with open(self.settings_file, 'w') as f:
+      json.dump(settings, f, indent=2)
+
+
+  def load_settings(self, key='latest'):
+    '''Loads settings from json file.'''
+    _check_or_create_settings(self.SETTING_KEY)
+    
+    # Read settings into memory
+    with open(self.settings_file, 'r') as f:
+      settings = json.load(f)
+
+    value_dict = settings[key]
+    for depth_value in value_dict:
+      this_depth = value_dict[depth_value]
+      for scan_number in this_depth:
+        self._element_filters[depth_value][scan_number]._load_settings(this_depth[scan_number])
+        
+      
+  @property
+  def widget(self):
+    depth_panes = []
+    for depth_value in self._element_filters:
+      scan_panes = []
+      this_depth = self._element_filters[depth_value]
+      for scan_number in this_depth:
+        this_element_filter = this_depth[scan_number]
+        scan_panes.append(this_element_filter.widget)
+      this_panel = iw.Tab(children=scan_panes) 
+
+      # Loop scans again to set titles
+      for i, scan_number in enumerate(this_depth):
+        this_panel.set_title(i, scan_number)
+
+      depth_panes.append(this_panel)
+
+    depth_panel = iw.Tab(children=depth_panes,
+                         layout=iw.Layout(**self._layout_kwargs))
+
+    # Loop depths again to set titles
+    for i, depth_value in enumerate(self._element_filters):
+      depth_panel.set_title(i, depth_value)
+      
+
+    return depth_panel
+
+    
+    
+class ElementFilterSinglePane:
   '''Object that will hold an element filter selector widget using composition.'''
-  def __init__(self, elements, orientation='vertical', input_type='slider', experiment_dir=None, **layout_kwargs):
+  def __init__(self, elements, orientation='vertical', input_type='slider', **layout_kwargs):
     assert orientation in ['vertical', 'horizontal']
     self._orientation = orientation
     self._elements = elements
@@ -394,52 +495,23 @@ class ElementFilter:
     self._input_widgets = [element_input(e) for e in self._elements]
     self._layout = iw.Layout(**layout_kwargs)
 
-    fname = SETTINGS_FILE
-    if experiment_dir is not None:
-      fname = os.path.join(experiment_dir, fname)
-
-    self.experiment_dir = experiment_dir
-    self.settings_file = fname
-
-    # Make sure there is a settings file present with the right key for this widget
-    _check_or_create_settings(self.experiment_dir, setting_key=self.SETTING_KEY)
-
 
   def get_input_widget(self, e):
     return self._input_widgets[self._elements.index(e)]
 
-  def save_settings(self, key='latest'):
-    '''Saves the current element filter as `key` in "settings.json"'''
-    if not key:
-      return
+  def _load_settings(self, value_dict):
+    '''Sets internal widget state.
 
-    # Read settings into memory
-    with open(self.settings_file, 'r') as f:
-      settings = json.load(f)
-    
-    # Modify setting
-    settings[ElementFilter.SETTING_KEY][key] = self.value_dict
+    Args:
+      value_dict: dictionary of the form {element1: value1, element2: value2, ...} 
 
-    # Write settings to disk
-    with open(self.settings_file, 'w') as f:
-      json.dump(settings, f, indent=2)
-
-  def load_settings(self, key='latest'):
-    '''Loads settings from json file.'''
-    _check_or_create_settings()
-    
-    # Read settings into memory
-    with open(self.settings_file, 'r') as f:
-      settings = json.load(f)
-
-    value_dict = settings[self.SETTING_KEY][key]
-    for e in self._elements:
+    '''
+    for e in value_dict:
       if self._input_type == 'text':
         val = str(value_dict[e])
       else:
         val = value_dict[e]
       self.get_input_widget(e).value = val
-
 
   @property
   def filter_dict(self):
@@ -483,7 +555,7 @@ class ElementFilter:
     return container(inputs, layout=self._layout)
 
 
-class ElementFilterWithBoxes(ElementFilter):
+class ElementFilterWithBoxes(ElementFilterSinglePane):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
@@ -516,7 +588,7 @@ class SettingsController:
     self.settings_file = w.settings_file
     self._setting_key = w.SETTING_KEY
 
-    _check_or_create_settings(experiment_dir, setting_key=w.SETTING_KEY)
+    _check_or_create_settings(self._setting_key, self.experiment_dir)
     
 
     self._layout = iw.Layout(**layout_kwargs)
@@ -560,7 +632,7 @@ class SettingsController:
   def refresh_settings(self):
     with open(self.settings_file, 'r') as f:
       settings = json.load(f)
-    options = settings[self._setting_key].keys()
+    options = settings.keys()
     self.load_widget.options = options
 
   @property
@@ -574,6 +646,438 @@ class SettingsController:
     save = iw.HBox([self.save_button, self.save_widget])
     load = iw.HBox([self.load_button, self.load_widget])
     refresh = self.refresh_button
-    title = iw.HTML('<h2>Settings</h2>')
+    #title = iw.HTML('<h2>Settings</h2>')
     
-    return container([title, save, load, refresh], layout=self._layout)
+    return container([save, load, refresh], layout=self._layout)
+
+
+class DetsumPlot:
+    def __init__(self, detsum):
+        self.graph_output = iw.Output()
+        self.detsum = detsum
+        self.avg = np.mean(self.detsum.data)
+        self.min = np.nanmin(self.detsum.data)
+        self.max = np.nanmax(self.detsum.data)
+        self._default_layout = iw.Layout(width='230px')
+        
+        self.step = self.max/100
+        
+        self.isNoisy_checkbox = iw.Checkbox(description='Noisy', value=self.detsum.isNoisy)
+        self.isNoisy_checkbox.observe(self.set_noise_flag, names='value')
+        
+        self.force_refresh_button = iw.Button(description='refresh')
+        self.force_refresh_button.on_click(self.refresh_graph)
+        
+        
+        self.update_max({'new': self.max})
+        
+    def set_noise_flag(self, val):
+        utils.set_noisy_detsum_flag(self.detsum, val['new'])
+        
+        
+    def refresh_graph(self, _):
+        self.graph_output.clear_output(wait=True)
+        with self.graph_output:
+            im = iw.HTML(self.detsum.plot(base64=True, raw=True))
+            display(im)
+
+    def update_max_min(self, _):
+      vmin = float(self.min_slider.value)
+      vmax = float(self.max_slider.value)
+      try:
+        plot = self.detsum.plot(base64=True,
+                                raw=True,
+                                vmin=vmin,
+                                vmax=vmax)
+        to_display = iw.HTML(plot)
+      except ValueError as e:
+        to_display = iw.HTML(f'<p style="color:red">{str(e)}!</p>')
+      self.graph_output.clear_output(wait=True) 
+      with self.graph_output:
+        display(to_display)
+          
+        
+        
+    def update_max(self, val):
+        self.graph_output.clear_output(wait=True)
+        vmax = float(val['new'])
+        with self.graph_output:
+            im = iw.HTML(self.detsum.plot(base64=True, vmax=vmax, raw=True))
+            display(im)
+                                 
+    def update_min(self, val):
+        self.graph_output.clear_output(wait=True)
+        vmin = float(val['new'])
+        with self.graph_output:
+            im = iw.HTML(self.detsum.plot(base64=True, vmin=vmin, raw=True))
+            display(im)
+            
+        
+    @property
+    def widget(self):
+        self.max_slider = iw.FloatSlider(layout=self._default_layout,
+                                             min=self.step, max=2*self.max, value=self.max, step=self.step,
+                                             readout_format='.2e', continuous_update=False)
+        
+        self.min_slider = iw.FloatSlider(layout=self._default_layout,
+                                             min=self.step, max=2*self.max, value=self.step, step=self.step,
+                                             readout_format='.2e', continuous_update=False)
+        
+        # self.max_slider.observe(self.update_max, names='value')
+        # self.min_slider.observe(self.update_min, names='value')
+        self.max_slider.observe(self.update_max_min, names='value')
+        self.min_slider.observe(self.update_max_min, names='value')
+        min_label = iw.Text(f'min counts: {self.min:0.2e}')
+        max_label = iw.Text(f'max counts: {self.max:0.2e}')
+        avg_label = iw.Text(f'avg counts: {self.avg:0.2e}')
+        labels = iw.HTML(f'''<center><p>min: {self.min:0.2e}</p>
+                                     <p>max: {self.max:0.2e}</p>
+                                     <p>avg: {self.avg:0.2e}</p></center>''',
+                                layout=self._default_layout)
+        #labels = iw.VBox([min_label, max_label, avg_label], layout=self._default_layout)
+        
+        vbox = iw.VBox([self.graph_output,
+                                self.min_slider,
+                                self.max_slider,
+                                labels,
+                                iw.HBox([self.force_refresh_button, self.isNoisy_checkbox])])
+        return vbox
+
+
+class NoiseFlaggingUI:
+    def __init__(self, profile):
+        self._tab_dict = {}
+        for depth in profile.depths:
+            plots = [DetsumPlot(d).widget for d in depth.detsums]
+            rows = []
+            for i in np.arange(0, len(plots), 4):
+                rows.append(iw.HBox(plots[i:i+4]))
+                
+            self._tab_dict[depth.depth] = iw.VBox(rows)
+            
+            
+    @property
+    def widget(self):
+        children = []
+        tabs = iw.Tab()
+        for i, depth in enumerate(self._tab_dict):
+            tabs.set_title(i, depth)
+            children.append(self._tab_dict[depth])
+            
+        tabs.children = children
+        return tabs
+
+def noise_flagging_ui(profile):
+  nf = NoiseFlaggingUI(profile)
+  display(nf.widget)
+
+def ribbon_plot_ui(profile, elements_of_interest):
+  experiment_dir = profile.experiment_dir
+  status_indicator = iw.Output()
+  with status_indicator:
+    display(iw.HTML('<h3 style="color:green">Ready</h3>'))
+  graph_output = iw.Output()
+  # element_inputs = {}
+  # element_filter = {}
+  test = {}
+  smalltextbox = iw.Layout(width='50px', height='25px')
+  # filter_func = lambda n: lambda x: np.mean(x) + np.std(x)*n
+  
+  element_filter = ElementFilterPanel(profile,
+                                    input_type='text',
+                                    orientation='horizontal',
+                                    experiment_dir=experiment_dir)#, **layout_kwargs)
+  filter_settings = SettingsController(element_filter)
+  
+  # for e in ELEMENTS_OF_INTEREST:
+  #   element_inputs[e] = iw.Textarea(value='2', layout=smalltextbox)
+  #   element_filter[e] = filter_func(2)
+    
+  filter_by_control = iw.Dropdown(options=elements_of_interest,
+                                          value='Cu', description='Filter by:',
+                                          layout=iw.Layout(width='200px'))
+  
+  combine_scans_checkbox = iw.Checkbox(value=True, description='Combine Scans')
+  
+  combine_detsums_checkbox = iw.Checkbox(value=False, description='Combine Detsums')
+  
+  normalize_by_control = iw.Dropdown(options=['counts', 'pixels'],
+                                            value='counts',
+                                            description='Normalize By',
+                                            layout=iw.Layout(width='200px'))
+  
+  
+  N_input = iw.Textarea(value='8', layout=iw.Layout(width='150px'), description='N')
+  update_button = iw.Button(description='Update Plot')                          
+  clear_output_control = iw.Checkbox(value=False, description='Clear output after each run')
+  
+  # element_filter_input = iw.HBox(
+  #     [iw.VBox([iw.HTML(f'<h3>{e}</h3>'), element_inputs[e]]) for e in ELEMENTS_OF_INTEREST]
+  # )
+  
+  save_html_button = iw.Button(description='Save HTML')
+  def update_plot(b):
+    element_filter.save_settings()
+    status_indicator.clear_output()
+    # for e in ELEMENTS_OF_INTEREST:
+    #   val = float(element_inputs[e].value)
+    #   element_filter[e] = filter_func(val)
+    with status_indicator:
+      display(iw.HTML('<h3 style="color:red">Working...</h3>'))
+
+    info_banner_html = (f'Filter by: {filter_by_control.value} | '
+                      f'Comb. Scans: {combine_scans_checkbox.value} | '
+                      f'Comb. Detsums: {combine_detsums_checkbox.value} | '
+                      f'N: {N_input.value} | '
+                      f'Normalize By: {normalize_by_control.value} | ')
+    info_banner = iw.HTML(info_banner_html)
+
+    plot = ribbon_plot(profile, element_filter=element_filter.filter_dict,
+                filter_by=filter_by_control.value,
+                combine_detsums=combine_detsums_checkbox.value,
+                combine_scans=combine_scans_checkbox.value,
+                N=int(N_input.value),
+                normalize_by=normalize_by_control.value,
+                base64=True)
+    if clear_output_control.value:
+      graph_output.clear_output()
+
+    with graph_output:
+      #display(iw.HTML(plot))
+      display(iw.VBox([iw.HTML(plot), iw.HTML(info_banner_html)]))
+
+    status_indicator.clear_output()
+    with status_indicator:
+      display(iw.HTML('<h3 style="color:green">Ready</h3>'))
+  
+  update_button.on_click(update_plot)
+  
+
+  update_plot('this param does not matter here')  
+
+  #https://stackoverflow.com/questions/55336771/align-ipywidget-button-to-center
+  controls_bot = iw.Box([element_filter.widget, filter_settings.widget],
+                                layout=iw.Layout(display='flex', align_items='center'))
+  controls_top = iw.HBox([iw.VBox([update_button, status_indicator]),
+                              iw.VBox([filter_by_control, normalize_by_control]),
+                              iw.VBox([combine_scans_checkbox, combine_detsums_checkbox]),
+                              N_input, clear_output_control])
+
+  controls = iw.VBox([controls_top, controls_bot],
+                            layout=iw.Layout(
+                                border='1px solid black',
+                                width='100%',
+                            ))
+  app = iw.VBox([graph_output, controls])
+  display(app)
+
+
+def image_ui(profile, elements_of_interest):
+  experiment_dir = profile.experiment_dir
+  plot_area = iw.Output()
+  status_indicator = iw.Output()
+  group_indicator = iw.Output()
+  
+  with group_indicator:
+    display(iw.HTML('<h3 style="color:orange">No Group Selected</h3>'))
+
+  with status_indicator:
+    display(iw.HTML('<h3 style="color:green">Ready</h3>'))
+
+  
+  # Making the controls
+
+  layout_kwargs = dict(width='100%', border='1px solid black')
+  #settings_layout = dict(width='20%', border='1px solid blue')
+
+  depth_selector = PropSelector(profile.depths, orientation='horizontal', title='Depths to plot',
+                                   description_func=lambda d: d.depth, **layout_kwargs)
+  element_filter = ElementFilterPanel(profile,
+                                    orientation='horizontal',
+                                    experiment_dir=experiment_dir)
+
+  filter_settings = SettingsController(element_filter, orientation='horizontal')
+
+  element_plot_selector = PropSelector(elements_of_interest,
+                                          orientation='horizontal',
+                                          title='Elements to plot',
+                                          **layout_kwargs)
+
+  element_group_selector = PropSelector(elements_of_interest,
+                                           orientation='horizontal',
+                                           title='Groups to show',
+                                           **layout_kwargs)
+
+  combine_detsums_checkbox = iw.Checkbox(value=False, indent=False, description='Combine Detsums')
+  update_button = iw.Button(description='Update')
+  raw_data_toggle = iw.ToggleButtons(value='Filtered', options=['Filtered', 'Raw'])
+  show_groups_toggle = iw.ToggleButton(value=True, description='Show Groups')
+  exclusive_groups_toggle = iw.ToggleButtons(value='Exclusive', options=['Exclusive', 'Nonexclusive'])
+
+  controls_bottom = iw.HBox([update_button,
+                                          show_groups_toggle,
+                                          exclusive_groups_toggle,
+                                          raw_data_toggle,
+                                          status_indicator],
+                                         layout=iw.Layout(padding='5px', **layout_kwargs))
+
+
+  controls_top = iw.VBox([depth_selector.widget,
+                                   element_plot_selector.widget,
+                                   element_filter.widget,
+                                   filter_settings.widget,
+                                   element_group_selector.widget,
+                                   group_indicator])
+
+  controls = iw.VBox([controls_top, controls_bottom])
+                            
+  rows = []
+  rows_raw = []
+  rows_groups_exclusive = []
+  rows_groups_exclusive_raw = []
+  rows_groups_nonexclusive = []
+  rows_groups_nonexclusive_raw = []
+  
+  current_group = []
+
+
+  def show_plots(val):
+    plot_area.clear_output()
+    show = show_groups_toggle.value
+    exclusive = exclusive_groups_toggle.value == 'Exclusive'
+    with plot_area:
+      if raw_data_toggle.value == 'Raw':
+        if show and exclusive:
+          display(iw.VBox(rows_groups_exclusive_raw))
+        elif show and not exclusive:
+          display(iw.VBox(rows_groups_nonexclusive_raw))
+        elif not show:
+          display(iw.VBox(rows_raw))
+      elif raw_data_toggle.value == 'Filtered':
+        if show and exclusive:
+          display(iw.VBox(rows_groups_exclusive))
+        if show and not exclusive:
+          display(iw.VBox(rows_groups_nonexclusive))
+        elif not show:
+          display(iw.VBox(rows))
+        
+    status_indicator.clear_output()
+    with status_indicator:
+      display(iw.HTML('<h3 style="color:green">Ready</h3>'))
+
+
+  def update_group(element, val):
+    nonlocal current_group
+    if val:
+      current_group.append(element)
+    elif not val:
+      current_group.remove(element)
+
+    sorted_group = [elements_of_interest[elements_of_interest.index(element)] if
+                                          element in current_group else None for element in elements_of_interest]
+    sorted_group = list(filter(lambda x: x, sorted_group))
+    group_indicator.clear_output()
+    with group_indicator:
+      if not current_group:
+        display(iw.HTML('<h3 style="color:orange">No group selected</h3>'))
+      else:
+        group_str = '  |  '.join(sorted_group)
+        display(iw.HTML(f'<h3 style="color:red">Group Selected: {group_str}</hp>'))
+    current_group = sorted_group
+
+  def generate_plots(b):
+    element_filter.save_settings()
+    status_indicator.clear_output()
+    with status_indicator:
+      display(iw.HTML('<h3 style="color:red">Working....</h3>'))
+
+    depths_to_plot = depth_selector.selected_props
+    if not depths_to_plot:
+      status_indicator.clear_output()
+      with status_indicator:
+        display(iw.HTML('<h3 style="color:orange">No Depth Selected!</h3>'))
+      return
+
+    elements_to_plot = element_plot_selector.selected_props
+
+    group = '|'.join(element_group_selector.selected_props)
+
+    for depth in depths_to_plot:
+      depth.apply_element_filter(element_filter.filter_dict[depth.depth],
+                                 combine_detsums=combine_detsums_checkbox.value)
+
+    def get_row(depth, elements, raw, show_groups, exclusive):
+      detsums = sorted(depth.detsums, key=lambda d: d.element)
+      plots = []
+      #group = '|'.join(current_group)
+      for scan in depth.scans:
+        data = scan.data['element_group'].values.reshape(scan.detsums[0].shape)
+        for detsum in scan.detsums:
+          if detsum.element not in elements:
+            continue
+          fig, ax = plt.subplots(figsize=(15, 15))
+          detsum.plot(raw=raw, ax=ax)
+          if show_groups and current_group:
+            fn = np.vectorize(lambda group: utils.check_groups(group, current_group, exclusive=exclusive))
+            rows, cols = np.where(fn(data))
+            ax.scatter(cols, rows, s=20, color='red')
+          plot = encode_matplotlib_fig(fig)
+          plt.close()
+          plots.append(iw.HTML(plot))
+      return plots
+
+    nonlocal rows
+    nonlocal rows_raw
+    nonlocal rows_groups_exclusive
+    nonlocal rows_groups_exclusive_raw
+    nonlocal rows_groups_nonexclusive
+    nonlocal rows_groups_nonexclusive_raw
+
+    
+    rows = [iw.HBox(get_row(depth, elements_to_plot, False, False, False)) for depth in depths_to_plot]
+    rows_raw = [iw.HBox(get_row(depth, elements_to_plot, True, False, False)) for depth in depths_to_plot]
+    rows_groups_exclusive = [iw.HBox(get_row(depth, elements_to_plot, False, True, True)) for depth in depths_to_plot]
+    rows_groups_exclusive_raw = [iw.HBox(get_row(depth, elements_to_plot, True, True, True)) for depth in depths_to_plot]
+    rows_groups_nonexclusive = [iw.HBox(get_row(depth, elements_to_plot, False, True, False)) for depth in depths_to_plot]
+    rows_groups_nonexclusive_raw = [iw.HBox(get_row(depth, elements_to_plot, True, True, False)) for depth in depths_to_plot]
+
+    show_plots(0)
+
+
+  update_button.on_click(generate_plots)
+  raw_data_toggle.observe(show_plots, 'value')
+  show_groups_toggle.observe(show_plots, 'value')
+  exclusive_groups_toggle.observe(show_plots, 'value')
+  element_group_selector.observe(update_group)
+  # for selector in depth_selectors.values():
+  #   selector.observe(update_plot)
+  display(iw.VBox([controls, plot_area]))
+
+
+def run_ui(profile_dict, ui_func, title=None):
+  widgets = []
+  if title is not None:
+    widgets.append(iw.HTML(f'<h2>{title}</h2>'))
+
+  dropdown = iw.Dropdown(description='Select Profile', options=profile_dict)
+  run_button = iw.Button(description='Run')
+  text_output = iw.Output()
+  widgets.append(iw.HBox([dropdown, run_button, text_output]))
+
+  ui_output = iw.Output()
+  widgets.append(ui_output)
+
+  with text_output:
+      display(iw.HTML('<div style="color:Green">Ready...</div>'))
+  def run(_):
+      text_output.clear_output()
+      with text_output:
+          display(iw.HTML('<div style="color:red">Working...</div>'))
+      ui_output.clear_output()
+      with ui_output:
+          ui_func(dropdown.value)
+      text_output.clear_output()
+      with text_output:
+          display(iw.HTML('<div style="color:green">Ready...</div>'))
+  run_button.on_click(run)
+  display(iw.VBox(widgets))

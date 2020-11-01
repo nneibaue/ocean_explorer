@@ -1,0 +1,5 @@
+ipython
+nbformat==4.4.0
+altair
+jupyter
+matplotlib

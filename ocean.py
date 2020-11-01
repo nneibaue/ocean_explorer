@@ -6,22 +6,36 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from functools import reduce
-from plotting import encode_matplotlib_fig
+from plotting import encode_matplotlib_fig, _check_or_create_settings
+import ocean_utils
+import json
+
+DRIVE_BASE = '/content/gdrive/My Drive'
+SCAN_FILE_FILTER = ['.DS_Store']
+DEPTH_FILE_FILTER = ['.DS_Store', 'property_map.json', 'available_props.json', 'settings']
+
+PROFILE_BASE_DIR = 'deglitched_profiles'
+
+if os.getcwd() == '/content':
+  inDrive = True
+else:
+  inDrive = False
 
 class Detsum:
-  file_template = '^detsum_([a-zA-Z]{1,2})_([A-Z])(_norm)?.txt$'
   def __init__(self, path):
+    self.isNoisy = False
     self.filename = path.split('/')[-1]
     self.scan_name = path.split('/')[-2]
     self.depth = path.split('/')[-3]
+    self.profile_dir = '/'.join(path.split('/')[:-3])
     if re.search('_norm.txt', self.filename):
       self.normalized = True
     else:
       self.normalized = False
-    if not re.fullmatch(Detsum.file_template, self.filename):
+    if not re.fullmatch(ocean_utils.FileTemplates.DETSUM, self.filename):
       raise NameError(f'{self.filename} is not a valid name for Detsum')
-    self.element = re.search(Detsum.file_template, self.filename).group(1)
-    self.orbital = re.search(Detsum.file_template, self.filename).group(2)
+    self.element = re.search(ocean_utils.FileTemplates.DETSUM, self.filename).group(1)
+    self.orbital = re.search(ocean_utils.FileTemplates.DETSUM, self.filename).group(2)
 
     self._data_raw = np.array(np.genfromtxt(path))
     self.shape = self._data_raw.shape
@@ -45,6 +59,8 @@ class Detsum:
     return np.logical_and.reduce(self._masks)
 
   def _apply_masks(self):
+    if self.isNoisy:
+      return np.full(self.shape, np.nan)
     data = self._data_raw.copy()
     if len(self._masks) == 0:
       return data
@@ -52,8 +68,8 @@ class Detsum:
     return data
 
   def add_mask(self, mask):
-    '''Removes points that aren't in the mask'''
-    if mask.shape != self.data.shape:
+    '''Adds a new mask'''
+    if mask.shape != self.shape:
       raise ValueError(f'Trying to add mask of shape {mask.shape} to Detsum of shape {self.data.shape}')
     self._masks.append(mask)
 
@@ -99,29 +115,31 @@ class Detsum:
 
 
 class Scan:
-  file_template = '^scan2D_([0-9]{4,7})$' # Assume scan number < 1E6
-
   def __init__(self, path=None,
                elements_of_interest=None,
                orbitals=['K'],
                normalized=True,
                copy=None):
+
+    self.isNoisy = False
+    self.profile = path.split('/')[-3]
+    self.experiment_dir = '/'.join(path.split('/')[:-3])
     self.depth = path.split('/')[-2]
     self.name = path.split('/')[-1]
     self._elements_of_interest = elements_of_interest
     self._orbitals = orbitals
     self._normalized = normalized
-    if not re.fullmatch(Scan.file_template, self.name):
+    if not re.fullmatch(ocean_utils.FileTemplates.SCAN, self.name):
       raise NameError(f'{path} is not a valid name for Scan directory')
     else:
       self.path = path
 
-    self.scan_number = re.search(Scan.file_template, self.name).group(1)
+    self.scan_number = re.search(ocean_utils.FileTemplates.SCAN, self.name).group(1)
 
     # Build regex template based on parameters
     template = '^detsum'
     if elements_of_interest is None:
-      template += '[a-zA-Z]{1,2}'
+      template += '_[a-zA-Z]{1,2}'
     else:
       template += f'_({"|".join(elements_of_interest)})'
     template += f'_({"|".join(orbitals)})'
@@ -135,11 +153,8 @@ class Scan:
     if copy is None:
       self.detsums = self._make_detsums(template)
     else:
-      if not isinstance(copy, Scan):
-        raise TypeError("`copy` must be a Scan instance")
       self.detsums = copy.detsums
     self.detsums = sorted(self.detsums, key = lambda d: d.element)
-    
 
   def _get_element_groups(self):
     elements = np.array(self.elements)
@@ -154,9 +169,31 @@ class Scan:
         groups[i, j] = group_name
     return groups
 
-  def get_unique_groups(self, elements_to_sum=['Cu'], sort_by='counts'):
-    if sort_by not in (['num_pixels'] + [f'{element}_counts' for element in elements_to_sum]):
-      raise ValueError("`sort_by` must be 'pixels' or '{element}_counts'")
+  def get_unique_groups(self, elements_to_sum, sort_by):
+    '''Returns a DataFrame with counts and sums for each unique element group.
+    
+    Args:
+      elements_to_sum: list of elements to sum over for each group. For example, 
+        if this is ['Cu', 'Br'], then the resulting DataFrame will have a colum
+        with Cu counts for each group and Br counts for each group. 
+      sort_by: either "num_pixels" or <element>_counts, where <element> is an
+        element present in `elements_to_sum`.
+    Returns: pandas DataFrame with unique element groups as the index. There is
+      one column per element in `elements_to_sum`, and the final column is 
+      either <element>_counts or num_pixels, depending on the value passed
+      to `sort_by`. The rows are sorted by the final column.
+      '''
+    
+    if 'counts' in sort_by:
+      match = re.match('^([a-zA-Z]{1,2})_counts$', sort_by)
+      if match and match.group(1) not in elements_to_sum:
+        raise ValueError(f'{sort_by} passed to `sort_by`, but {match.group(1)}'
+                          ' not found in `elements_to_sum`!')
+      elif not match:
+        raise ValueError('`sort_by` must be "num_pixels" or "{element}_counts"!')
+    elif sort_by != 'num_pixels':
+        raise ValueError('`sort_by` must be "num_pixels" or "{element}_counts"!')
+
     data = self.data
     if np.all(pd.isnull(data).values):
       return pd.DataFrame()
@@ -309,11 +346,22 @@ class Scan:
 
   def _make_detsums(self, template):
     detsums = []
+
+    # Get the noisy detsums
+    noisy_detsums_file = os.path.join(
+      self.experiment_dir, self.profile, 'settings',
+      ocean_utils.NOISY_DETSUMS_FILE)
+    with open(noisy_detsums_file, 'r') as f:
+      noisy_detsums = json.load(f)
+
     for f in os.listdir(self.path):
       fullpath = os.path.join(self.path, f)
       #print(self._template, f, re.fullmatch(self._template, f))
       if re.fullmatch(self._template, f):
-        detsums.append(Detsum(fullpath))
+        this_detsum = Detsum(fullpath)
+        this_detsum.isNoisy = noisy_detsums[self.name][this_detsum.element]
+        detsums.append(this_detsum)
+
     for d in detsums:
       self.__dict__[f'{d.element}_{d.orbital}'] = d
     return detsums
@@ -353,6 +401,7 @@ class CombinedScan(Scan):
     assert len(set([s.depth for s in scans])) == 1
 
     self.depth = scans[0].depth
+      
     self._scans = scans
 
 
@@ -377,8 +426,6 @@ class CombinedScan(Scan):
     return f'CombinedScan\n===================\n{scans})'
            
 class Depth:
-  file_template = '^([0-9])+m$'
-
   def __init__(self, path,
                elements_of_interest=None,
                orbitals=['K'],
@@ -391,18 +438,20 @@ class Depth:
     }
     self.scans = []
     self.name = path.split('/')[-1]
-    if not re.fullmatch(Depth.file_template, self.name):
+    if not re.fullmatch(ocean_utils.FileTemplates.DEPTH, self.name):
       raise NameError(f'{self.name} is not a valid name for a Depth!')
-    #self.depth = re.search(Depth.file_template, path.split('/')[-1]).group(1)
+    #self.depth = re.search(ocean_utils.FileTemplates.DEPTH, path.split('/')[-1]).group(1)
     self.depth = path.split('/')[-1]
+    
+    # Load the scans, flagging noisy ones
     for f in os.listdir(path):
       fullpath = os.path.join(path, f)
+      if f in SCAN_FILE_FILTER:
+        continue
       try:
-        self.scans.append(
-            Scan(fullpath,
-                 elements_of_interest=elements_of_interest,
-                 orbitals=orbitals,
-                 normalized=normalized))
+        this_scan = Scan(fullpath, elements_of_interest=elements_of_interest,
+                         orbitals=orbitals, normalized=normalized)
+        self.scans.append(this_scan)
       except NameError as e:
         print(e)
         pass
@@ -410,6 +459,13 @@ class Depth:
   # Returns a fresh copy of the Detsum from the source data
   def fresh_copy(self):
     return Depth(**self._instance_kwargs)
+
+  def get_scan(self, scan_number):
+    for s in self.scans:
+      if s.scan_number == scan_number:
+        return s
+    
+    raise ValueError(f'No scan found with scan number {scan_number}')
 
   @property
   def detsums(self):
@@ -441,11 +497,11 @@ class Depth:
     return df
 
   def apply_element_filter(self, filter_dict,
-                           combine_detsums=True, inplace=True):
+                           combine_detsums=False, inplace=True):
     '''Applies element-wise filter to all Detsums.
 
     Args:
-      filter_dict: dictionary of the form {`element`: `filter_func`}, where
+      filter_dict: dictionary of the form {scan_number: {element: filter_func}}
         `filter_func` takes an array and returns a single threshold value. 
       combine_detsum: bool. Whether or not to use the data from all Detsums
         in this Depth when calculating the threshold with `filter_func`. If
@@ -456,11 +512,11 @@ class Depth:
         take some time, as it has to re-import data to re-create all Scans and
         Detsums. 
     '''
-    
 
-    for element in filter_dict:
-      if element not in self.elements:
-        print(f'{element} not present in this Depth object')
+    # TODO: Fix this later
+    if combine_detsums:
+      raise NotImplementedError
+    
 
     # for testing the functions in filter_dict
     test_arr = np.linspace(0, 1, 100)
@@ -476,21 +532,23 @@ class Depth:
 
     data_full = depth.combined_scan.data.copy()
 
-    for d in depth.detsums:
-      get_threshold = filter_dict[d.element]
-      # Make sure filter_funcs are working properly.
-      if not isinstance(get_threshold(test_arr), float):
-        raise TypeError('Problem encountered with filter function for {d.element}. '
-                        'All filter funcs must be of the form f([array]) -> [float]')
-      if combine_detsums:
-        data_for_mask = data_full[d.element].values
-      else:
+    for scan in depth.scans:
+      filter_dict_inner = filter_dict[scan.scan_number]
+      for element in filter_dict_inner:
+        if element not in scan.elements:
+          print(f'{element} not present in Scan {scan}')
+      for d in scan.detsums:
+        get_threshold = filter_dict_inner[d.element]
+        # Make sure filter_funcs are working properly.
+        if not isinstance(get_threshold(test_arr), float):
+          raise TypeError('Problem encountered with filter function for {d.element}. '
+                          'All filter funcs must be of the form f([array]) -> [float]')
         data_for_mask = d._data_raw
-
-      threshold = get_threshold(data_for_mask)
-      #print(f'Threshold for {d.element}: {threshold}')
-      mask = d._data_raw > threshold
-      d.add_mask(mask)
+  
+        threshold = get_threshold(data_for_mask)
+        #print(f'Threshold for {d.element}: {threshold}')
+        mask = d._data_raw > threshold
+        d.add_mask(mask)
 
     if not inplace:
       return depth
@@ -498,3 +556,79 @@ class Depth:
 
   def __repr__(self):
     return f'Depth({self.depth}, scans: {[s.scan_number for s in self.scans]})'
+
+
+class Profile:
+  '''A Container class to instantiate and hold Depth objects'''
+
+  def __init__(self, experiment_dir,
+               elements_of_interest=None,
+               orbitals=['K'],
+               normalized=True):
+
+    self._elements_of_interest = elements_of_interest
+    depths = []
+
+    self.experiment_dir = experiment_dir
+    self.profile_name = '_'.join(self.experiment_dir.split('/')[-1].split('_')[:-1])
+    ocean_utils.create_noisy_detsums_file(experiment_dir)
+    # Load depths
+    for dir_or_file in os.listdir(experiment_dir):
+      if dir_or_file in DEPTH_FILE_FILTER:
+        continue
+      try:
+        fullpath = os.path.join(experiment_dir, dir_or_file)
+        d = Depth(os.path.join(fullpath),
+                  elements_of_interest=elements_of_interest,
+                  orbitals=['K'],
+                  normalized=True)
+        depths.append(d)
+        print(f"{self.profile_name}: Successfully imported data for {d.depth}")
+      except NameError as e:
+        print(e)
+        continue
+
+    self.depths = depths
+    
+
+    
+    
+
+  def apply_element_filter(self, filter_dict):
+    '''Applies element-wise filter depth-by-depth and scan-by-scan.'''
+    for depth in self.depths:
+      depth_value = depth.depth
+      if depth_value not in filter_dict:
+        raise KeyError(f'{depth_value} not found in `filter_dict`!')
+      depth.apply_element_filter(filter_dict[depth_value])
+      
+      
+  @property
+  def scans(self):
+    scans = []
+    for d in self.depths:
+      scans += d.scans
+    return scans
+
+  @property
+  def detsums(self):
+    detsums = []
+    for d in self.depths:
+      detsums += d.detsums
+    return detsums
+            
+
+def load_profiles(base_dir, elements_of_interest, orbitals, normalized):
+  '''Loads profiles from a common directory into a dictionary'''
+  profiles = {}
+  pattern = ocean_utils.FileTemplates.PROFILE
+  for dir_or_file in os.listdir(base_dir):
+    match = re.search(pattern, dir_or_file)
+    if match:
+      profile_path = os.path.join(base_dir, dir_or_file)
+      ocean_utils.create_noisy_detsums_file(profile_path)
+      profile_name = match.group(1)
+      profiles[profile_name] = Profile(
+        profile_path, elements_of_interest=elements_of_interest,
+        orbitals=orbitals, normalized=normalized)
+  return profiles

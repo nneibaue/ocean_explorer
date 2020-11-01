@@ -141,3 +141,6 @@ cython_debug/
 
 #vscode stuff
 .vscode/
+
+# Data
+deglitched_profiles/
